@@ -1,0 +1,233 @@
+import { useEffect, useState } from "react";
+import { AlertCircle, MapPin, User, ChevronRight, Calendar, Search } from "lucide-react";
+import { Input } from "./ui/input";
+import { getVisitasEmergencia } from "./api/VisitaApi";
+import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
+
+interface EmergencyVisitsViewProps {
+  onNavigate: (view: "emergencias" | "emergencia-detalle") => void;
+  onSelectVisit: (visit: VwDetalleVisitaEmergencia) => void;
+}
+
+export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVisitsViewProps) {
+  const [filter, setFilter] = useState<"all" | "Asignada" | "Confirmada">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visitas, setVisitas] = useState<VwDetalleVisitaEmergencia[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchEmergencyVisits = async () => {
+            try {
+              const data = await getVisitasEmergencia();
+              setVisitas(data);
+            } catch (err) {
+              setError((err as Error).message);
+            } finally {
+              setLoading(false);
+            }
+          };
+    fetchEmergencyVisits();
+  })
+
+  const filteredVisits = visitas.filter(visit => {
+    const matchesStatus = filter === "all" || visit.estado === filter;
+    
+    const matchesSearch = searchQuery === "" || 
+      visit.nombre_user_asignado.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visit.id_visita?.toString().includes(searchQuery.toLowerCase()) ||
+      visit.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesSearch;
+  });
+
+  const formatDateTime = (value?: string | Date | null) => {
+    if (!value) {
+        return "Fecha no disponible"; 
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (isNaN(date.getTime())) {
+      return "Fecha inválida";
+    }
+
+    return new Intl.DateTimeFormat("es-GT", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Asignada":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "Confirmada":
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "Asignada":
+        return "Asignada";
+      case "Confirmada":
+        return "Confirmada";
+      default:
+        return status;
+    }
+  };
+
+  const pendingCount = visitas.filter(v => v.estado === "Asignada").length;
+  const inProgressCount = visitas.filter(v => v.estado === "Confirmada").length;
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-xl flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-gray-900" />
+          </div>
+          <div>
+            <h1 className="text-gray-900">Visitas de Emergencia</h1>
+            <p className="text-gray-600">Gestiona visitas urgentes pendientes de confirmación</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <p className="text-gray-600 text-sm mb-1">Total de Visitas</p>
+            <p className="text-gray-900 text-2xl">{visitas.length}</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <p className="text-red-600 text-sm mb-1">Asignadas</p>
+            <p className="text-red-700 text-2xl">{pendingCount}</p>
+          </div>
+          <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+            <p className="text-yellow-600 text-sm mb-1">Confirmadas</p>
+            <p className="text-yellow-700 text-2xl">{inProgressCount}</p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              filter === "all"
+                ? "bg-[#fcb900] text-gray-900"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Todas ({visitas.length})
+          </button>
+          <button
+            onClick={() => setFilter("Asignada")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              filter === "Asignada"
+                ? "bg-red-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Asignadas ({pendingCount})
+          </button>
+          <button
+            onClick={() => setFilter("Confirmada")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              filter === "Confirmada"
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Confirmadas ({inProgressCount})
+          </button>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-00 p-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 w-5 h-5" />
+          <Input
+            type="text"
+            placeholder="Buscar por supervisor, ID o tienda..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12 border-gray-300 focus:border-[#fcb900] focus:ring-[#fcb900] text-gray-900"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-gray-600 text-sm mt-2">
+            Se encontraron <span className="text-gray-900">{filteredVisits.length}</span> resultado
+            {filteredVisits.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+      <div className="space-y-4">
+        {filteredVisits.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
+            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No hay visitas de emergencia con este filtro</p>
+          </div>
+        ) : (
+          filteredVisits.map((visitas) => (
+            <button
+              key={visitas.id_visita}
+              onClick={() => onSelectVisit(visitas)}
+              className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 text-left"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-gray-900">{visitas.id_visita}</span>
+                    <span className={`px-3 py-1 rounded-lg border text-sm ${getStatusColor(visitas.estado)}`}>
+                      {getStatusText(visitas.estado)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-start gap-2">
+                      <User className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Supervisor</p>
+                        <p className="text-gray-900">{visitas.nombre_user_asignado}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Tienda</p>
+                        <p className="text-gray-900">{visitas.tienda_nombre}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Tipo de Visita</p>
+                        <p className="text-gray-900">{visitas.tipo_visita}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Fecha Asignada</p>
+                        <p className="text-gray-900 text-sm">{formatDateTime(visitas.fecha_programacion)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-gray-500 text-sm mb-1">Comentarios</p>
+                    <p className="text-gray-700">{visitas.comentario}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0 mt-2" />
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

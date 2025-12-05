@@ -1,0 +1,103 @@
+import { TipoVisita } from "../types/TipoVisita";
+import { Visita } from "../types/Visita";
+import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "../types/VisitaEmergencia";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+}
+
+export async function getVisitaBySupervisor(
+  codigoUsuario: string,
+  fechaInicio: string,
+  fechaFin: string
+): Promise<Visita[]> {
+  const response = await fetch(
+    `${BASE_URL}/visitas/getVisitaBySupervisor/${codigoUsuario}?startDate=${fechaInicio}&endDate=${fechaFin}`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener visitas por supervisor");
+  }
+  return response.json();
+}
+
+export async function getLastVisitaBySupervisor(codigoUsuario: string): Promise<Visita | null> {
+  const response = await fetch(
+    `${BASE_URL}/visitas/getUltimaVisitaBySupervisor/${codigoUsuario}`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener la última visita por supervisor");
+  }
+
+  return response.json();
+}
+
+export async function getTiposVisita(): Promise<TipoVisita[]> {
+  const response = await fetch(
+    `${BASE_URL}/visitas/getTiposVisita`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener tipos de visita");
+  }
+  return response.json();
+}
+
+export async function createVisitaEmergencia(data: VisitaEmergencia) {
+  const response = await fetch(`${BASE_URL}/visitas/createVisitaEmergencia`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+
+  if (!response.ok) {
+    throw new Error("Error al crear visita de emergencia");
+  }
+
+  return response.json();
+}
+
+export async function getVisitasEmergenciaById(id_visita: string): Promise<VisitaEmergencia | null> {
+  const response = await fetch(
+    `${BASE_URL}/visitas/getVisitasEmergenciaById/${id_visita}`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener la visita de emergencia");
+  }
+  return response.json();
+}
+
+export async function getVisitasEmergencia(): Promise<VwDetalleVisitaEmergencia[]> {
+  const response = await fetch(
+    `${BASE_URL}/visitas/getVisitasEmergencia`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener las visitas de emergencia");
+  }
+
+  return response.json();
+}

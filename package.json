@@ -9,18 +9,41 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "leaflet": "^1.9.4",
+    "leaflet-routing-machine": "^3.2.12",
+    "lucide-react": "^0.554.0",
+    "mapbox-gl": "^3.16.0",
     "next": "16.0.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-day-picker": "^9.11.1",
+    "react-devtools": "^7.0.1",
+    "react-dom": "19.2.0",
+    "react-modal": "^3.16.3",
+    "react-super-responsive-table": "^6.0.2",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.17",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/file-saver": "^2.0.7",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
-    "@types/react": "^19",
+    "@types/react": "^19.2.6",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.22",
+    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
-    "tailwindcss": "^4",
+    "plop": "^4.0.4",
     "typescript": "^5"
   }
 }
