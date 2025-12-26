@@ -1,13 +1,18 @@
 import Image from "next/image";
 import logo from "@/assets/img/LOGOPINULITOORIGINAL.png";
 import { Menu, User } from "lucide-react";
+import { useEffect } from "react";
+import { useAuth } from "./api/context/AuthContext";
 
 type View =
   | "home"
   | "visitas"
   | "agregar"
   | "emergencias"
-  | "emergencia-detalle";
+  | "emergencia-detalle"
+  | "caso"
+  | "casos"
+  | "caso-detalle";
 
 interface HeaderProps {
   currentView: View;
@@ -19,14 +24,14 @@ interface HeaderProps {
 
 const date = new Date().toLocaleDateString("es-ES");
 
-export function Header({
-  currentView,
-  onViewChange,
-  onLogout,
-  onMenuToggle,
-  isMobileMenuOpen,
-  // user,
-}: HeaderProps) {
+export function Header({ onMenuToggle}: HeaderProps) {
+    const { user } = useAuth();
+    const nombre = user?.nombre != null ? String(user.nombre) : null;
+    const puesto = user?.puesto != null ? String(user.puesto) : null;
+  useEffect(() => {
+    const date = new Date().toLocaleDateString("es-ES");
+  })
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-[#fcb900] shadow-lg border-b border-yellow-600/20 z-30">
       <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
@@ -53,9 +58,9 @@ export function Header({
             </div>
             <div className="text-right leading-tight">
               <p className="text-gray-900 text-sm font-semibold">
-                {localStorage.getItem("nombre")}
+                {nombre}
               </p>
-              <p className="text-gray-800 text-xs">{localStorage.getItem("puesto")}</p>
+              <p className="text-gray-800 text-xs">{puesto}</p>
               <p className="text-gray-800 text-xs">{date}</p>
             </div>
           </div>
@@ -65,9 +70,9 @@ export function Header({
             </div>
             <div className="text-right leading-tight">
               <p className="text-gray-900 text-xs font-semibold">
-                {localStorage.getItem("nombre")}
+                {nombre}
               </p>
-              <p className="text-gray-800 text-[10px]">{localStorage.getItem("puesto")}</p>
+              <p className="text-gray-800 text-[10px]">{puesto}</p>
             </div>
           </div>
           <button

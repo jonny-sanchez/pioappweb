@@ -10,11 +10,22 @@ interface EmergencyVisitsViewProps {
 }
 
 export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVisitsViewProps) {
-  const [filter, setFilter] = useState<"all" | "Asignada" | "Confirmada">("all");
+  const [filter, setFilter] = useState<"all" | "Asignada" | "Confirmada" | "Finalizada" | "Atrasada">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [visitas, setVisitas] = useState<VwDetalleVisitaEmergencia[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const validaFechas = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return d < today;
+  };
+
 
   useEffect(() => {
     const fetchEmergencyVisits = async () => {
@@ -31,14 +42,24 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
   })
 
   const filteredVisits = visitas.filter(visit => {
-    const matchesStatus = filter === "all" || visit.estado === filter;
+    let matchedStatus = true;
+
+    if(filter === "Atrasada") {
+      if(visit.estado === "Finalizada" || !visit.fecha_programacion) {
+        matchedStatus = false;
+      } else {
+        matchedStatus = validaFechas(new Date(visit.fecha_programacion));
+      }
+    } else if(filter !== "all") {
+      matchedStatus = visit.estado === filter;
+    }
     
     const matchesSearch = searchQuery === "" || 
       visit.nombre_user_asignado.toLowerCase().includes(searchQuery.toLowerCase()) ||
       visit.id_visita?.toString().includes(searchQuery.toLowerCase()) ||
       visit.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesStatus && matchesSearch;
+    return matchedStatus && matchesSearch;
   });
 
   const formatDateTime = (value?: string | Date | null) => {
@@ -65,9 +86,13 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Asignada":
-        return "bg-red-50 text-red-700 border-red-200";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "Confirmada":
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      case "Finalizada":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "Atrasada":
+        return "bg-red-50 text-green-700 border-green-200";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
@@ -86,9 +111,15 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
 
   const pendingCount = visitas.filter(v => v.estado === "Asignada").length;
   const inProgressCount = visitas.filter(v => v.estado === "Confirmada").length;
+  const finishedCount = visitas.filter(v => v.estado === "Finalizada").length;
+  const overdueCount = visitas.filter(v => {
+    if (v.estado === "Finalizada" || !v.fecha_programacion) return false;
+    return validaFechas(new Date(v.fecha_programacion));
+  }).length;
+
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto p-10">
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-xl flex items-center justify-center">
@@ -99,18 +130,26 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             <p className="text-gray-600">Gestiona visitas urgentes pendientes de confirmación</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-6">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <p className="text-gray-600 text-sm mb-1">Total de Visitas</p>
             <p className="text-gray-900 text-2xl">{visitas.length}</p>
           </div>
-          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
-            <p className="text-red-600 text-sm mb-1">Asignadas</p>
-            <p className="text-red-700 text-2xl">{pendingCount}</p>
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <p className="text-blue-600 text-sm mb-1">Asignadas</p>
+            <p className="text-blue-700 text-2xl">{pendingCount}</p>
           </div>
           <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
             <p className="text-yellow-600 text-sm mb-1">Confirmadas</p>
             <p className="text-yellow-700 text-2xl">{inProgressCount}</p>
+          </div>
+          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+            <p className="text-green-600 text-sm mb-1">Finalizadas</p>
+            <p className="text-green-700 text-2xl">{finishedCount}</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <p className="text-red-600 text-sm mb-1">Atrasadas</p>
+            <p className="text-red-700 text-2xl">{overdueCount}</p>
           </div>
         </div>
       </div>
@@ -120,7 +159,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             onClick={() => setFilter("all")}
             className={`px-5 py-2 rounded-lg transition-all ${
               filter === "all"
-                ? "bg-[#fcb900] text-gray-900"
+                ? "bg-[#fcb900] text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -130,7 +169,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             onClick={() => setFilter("Asignada")}
             className={`px-5 py-2 rounded-lg transition-all ${
               filter === "Asignada"
-                ? "bg-red-500 text-white"
+                ? "bg-blue-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -145,6 +184,26 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             }`}
           >
             Confirmadas ({inProgressCount})
+          </button>
+          <button
+            onClick={() => setFilter("Finalizada")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              filter === "Confirmada"
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Finalizadas ({finishedCount})
+          </button>
+          <button
+            onClick={() => setFilter("Atrasada")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              filter === "Atrasada"
+                ? "bg-red-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Atrasadas ({overdueCount})
           </button>
         </div>
       </div>
@@ -184,7 +243,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-gray-900">{visitas.id_visita}</span>
                     <span className={`px-3 py-1 rounded-lg border text-sm ${getStatusColor(visitas.estado)}`}>
-                      {getStatusText(visitas.estado)}
+                      {(visitas.estado)}
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

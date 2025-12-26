@@ -1,4 +1,5 @@
 import { Supervisor } from "../types/Supervisor";
+import { authFetch } from "../utils/auth-fetch";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,7 +12,7 @@ function getAuthHeaders() {
 }
 
 export async function getAllSupervisors(): Promise<Supervisor[]> {
-  const response = await fetch(`${BASE_URL}/users/getAllSupervisors`,
+  const response = await authFetch(`/users/getAllSupervisors`,
     {
       headers: getAuthHeaders()
     }

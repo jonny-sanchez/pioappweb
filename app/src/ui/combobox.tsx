@@ -42,8 +42,11 @@ export function Combobox({
   const selectedOption = options.find((option) => option.id === value);
   const [search, setSearch] = React.useState("");
   const filteredOptions = options.filter(option =>
-    option.name.toLowerCase().includes(search.toLowerCase())
-  );
+  (option.name ?? "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+);
+
 
   return (
     <Popover open={open} onOpenChange={(state) => !disabled && setOpen(state)}>

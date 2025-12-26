@@ -5,6 +5,7 @@ import { Label } from "./ui/label";
 import Image from "next/image";
 import logo from "@/assets/img/LOGOPINULITOORIGINAL.png";
 import { login } from "./api/Login";
+import { useAuth } from "./api/context/AuthContext";
 
 interface LoginViewProps {
   onLogin: () => void;
@@ -13,25 +14,26 @@ interface LoginViewProps {
 export function LoginView({ onLogin }: LoginViewProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { setUser } = useAuth();
 
+  
   useEffect(() => {
-    if(!localStorage.getItem("token")){
-      return
-    } else {
+    if (typeof window !== "undefined" && localStorage.getItem("token")) {
       onLogin();
     }
-  }, []);
+  }, [onLogin]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const result = await login(username, password);
-
+      setUser(result.user);
       onLogin();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      alert("Credenciales incorrectas");
+      alert(error.message);
     }
   };
 

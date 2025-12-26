@@ -18,6 +18,7 @@ export interface VisitaEmergencia {
   userUpdatedAt?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  id_caso: string;
   EstadoVisitaEmergenciaModel?: {
     id_estado: number;
     nombre: string;

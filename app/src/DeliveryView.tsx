@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
-import { CheckCircle, Clock, Loader2, MapPin, CircleX } from "lucide-react";
+import { CheckCircle, Clock, Loader2, MapPin, CircleX, ArrowLeft } from "lucide-react";
 import { Supervisor } from "../src/types/Supervisor";
 import { Visita } from "../src/types/Visita";
 import { TiendaModulo } from "../src/types/TiendaModulo";
 import { TipoVisita } from "../src/types/TipoVisita";
 import { getAllSupervisors } from "../src/api/SupervisorApi";
-import { getAllTiendas } from "../src/api/TiendaModuloApi";
+import { getTiendaByIdAndEmpresa } from "../src/api/TiendaModuloApi";
 import { Combobox } from "./ui/combobox";
 import { MapView } from "./MapView";
 import {
@@ -24,10 +24,17 @@ import {
   SelectValue,
 } from "./ui/select";
 import { VisitaEmergencia } from "./types/VisitaEmergencia";
+import { VwDetalleCaso } from "./types/Caso";
 
-export function DeliveryView() {
+interface DeliveryViewProps {
+  caso: VwDetalleCaso | null;
+  onBack: () => void;
+}
+
+export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
   const [stores, setStores] = useState<TiendaModulo[]>([]);
+  const [store, setStore] = useState<TiendaModulo | null>(null)
   const [tiposVisita, setTiposVisita] = useState<TipoVisita[]>([]);
   const [visitas, setVisitas] = useState<Visita | null>(null);
   const [ultimaVisitaValidada, setUltimaVisitaValidada] = useState<boolean>(false);
@@ -40,24 +47,58 @@ export function DeliveryView() {
   const [selectedPilot, setSelectedPilot] = useState("");
   const [selectedTipoVisita, setSelectedTipoVisita] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
-  const [confirmationStatus, setConfirmationStatus] = useState<"waiting" | "confirmed" | null>(null);
+  const [confirmationStatus, setConfirmationStatus] = useState<"waiting" | "confirmed" | "finished" | null>(null);
   const [routeLoaded, setRouteLoaded] = useState(false);
   const [timeEstimate, setTimeEstimate] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
   const [selectedScheduleDay, setSelectedScheduleDay] = useState("");
+  const [lastGpsLat, setLastGpsLat] = useState<number | null>(null);
+  const [lastGpsLng, setLastGpsLng] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const scheduleDays = [
     { id: "1", name: "Hoy" },
     { id: "2", name: "Mañana" },
   ];
 
+  const fetchStore = async () => {
+    if (!caso?.id_tienda || !caso?.id_empresa) return;
+    
+    try {
+      const tienda = await getTiendaByIdAndEmpresa(caso.id_tienda,caso.id_empresa);
+      setStore(tienda);
+      console.log(tienda)
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchStore();
+  }, [caso])
+
+  useEffect(() => {
+    setSelectedStore(store);
+    console.log(store?.nombre_tienda)
+  }, [store])
+  
+  useEffect(() => {
+    console.log("Tienda seleccionada", selectedStore);
+  }, [selectedStore])
+
   useEffect(() => {
     const fetchSupervisors = async () => {
       try {
         const data = await getAllSupervisors();
         setSupervisors(data);
-      } catch (err) {
+      } catch (err: any) {
+        if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
+          localStorage.clear();
+          setIsAuthenticated(false);
+          return;
+        }
         setError((err as Error).message);
       } finally {
         setLoading(false);
@@ -113,29 +154,33 @@ export function DeliveryView() {
   const getScheduleDayName = () => scheduleDays.find(d => d.id === selectedScheduleDay)?.name || "";
 
   const getLastVisita = async () => {
-    if (selectedPilot) {
-      try {
-        const data = await getLastVisitaBySupervisor(selectedPilot);
-        setVisitas(data);
-        setUltimaVisitaValidada(true);
-        const fetchStores = async () => {
-          try {
-            const storeData = await getAllTiendas(data?.codigo_tienda || "0");
-            setStores(storeData);
-          }catch (err) {
-            setStoresError((err as Error).message);
-          }finally {
-            setLoading(false);
-          }
-        };
-        fetchStores();
-      } catch (error) {
-        console.error("Error al obtener visitas:", error);
+    if (!selectedPilot) return;
+
+    try {
+      const data = await getLastVisitaBySupervisor(selectedPilot);
+      setVisitas(data);
+      setUltimaVisitaValidada(true);
+
+      if (data?.gps_latitud_visita && data?.gps_longitud_visita && selectedScheduleDay === "1") {
+        setLastGpsLat(Number(data.gps_latitud_visita));
+        setLastGpsLng(Number(data.gps_longitud_visita));
+      } else {
+        setLastGpsLat(null);
+        setLastGpsLng(null);
       }
-    } else {
-      console.warn("Selecciona supervisor");
+      
+    } catch (err: any) {
+      if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
+        localStorage.clear();
+        setIsAuthenticated(false);
+        return;
+      }
+      console.error("Error al obtener visitas:", err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
 
   const createVisita = async () => {
     const fecha = new Date();
@@ -143,7 +188,7 @@ export function DeliveryView() {
       fecha.setDate(fecha.getDate() + 1);
       fecha.setHours(8, 0, 0, 0);
     }
-    if(selectedPilot && selectedStore && routeLoaded) {
+    if(selectedPilot && selectedStore && (selectedScheduleDay === "2" || selectedScheduleDay === "1" && routeLoaded)) {
       const visitaEmergencia = await createVisitaEmergencia({
         empresa: selectedStore.codigo_empresa,
         tienda: selectedStore.codigo_tienda,
@@ -158,7 +203,8 @@ export function DeliveryView() {
         id_estado: 1,
         fecha_programacion: fecha,
         user_asignado: selectedPilot,
-        nombre_user_asignado: getPilotName()
+        nombre_user_asignado: getPilotName(),
+        id_caso: caso?.id_caso || ""
       })
 
       if (visitaEmergencia.message) {
@@ -170,7 +216,6 @@ export function DeliveryView() {
         setVisitaCreada(visitaEmergencia.nuevaVisita);
         setShowSuccess(true);
         const visitaCreada = await getVisitasEmergenciaById(visitaEmergencia.nuevaVisita.id_visita);
-        console.log(visitaCreada);
       }
     } else {
       console.warn("Hacen falta parámetros para asignar una visita de emergencia");
@@ -181,31 +226,58 @@ export function DeliveryView() {
     if (!visitaCreada?.id_visita) return;
 
     const visitaId = visitaCreada.id_visita.toString();
-    const interval = setInterval(async () => {
-      try {
-        const updatedVisita = await getVisitasEmergenciaById(visitaId);
-        setVisitaCreada(updatedVisita);
 
-        if (updatedVisita?.id_estado === 2) {
-          setConfirmationStatus("confirmed");
-          clearInterval(interval);
-        } else if (updatedVisita?.id_estado === 1) {
-          setConfirmationStatus("waiting");
+    const interval = setInterval(async () => {
+      const updated = await getVisitasEmergenciaById(visitaId);
+        if (!updated) return;
+
+        setVisitaCreada(updated);
+
+        if (updated.last_gps_latitude && updated.last_gps_longitude && updated.id_estado === 2) {
+          setLastGpsLat(Number(updated.last_gps_latitude));
+          setLastGpsLng(Number(updated.last_gps_longitude));
         }
 
-      } catch (err) {
-        console.error("Error al consultar estado de la visita:", err);
+        if (updated.id_estado === 1) setConfirmationStatus("waiting");
+        if (updated.id_estado === 2) setConfirmationStatus("confirmed");
+        if (updated.id_estado === 3) {
+          setConfirmationStatus("finished");
+          clearInterval(interval);
       }
     }, 5000);
 
     return () => clearInterval(interval);
   }, [visitaCreada?.id_visita]);
 
-  const showMap = selectedPilot && selectedStore && visitas && selectedScheduleDay === "1";
+  useEffect(() => {
+    if(visitas && ultimaVisitaValidada && selectedScheduleDay === "1") {
+      setLastGpsLat(Number(visitas.gps_latitud_visita));
+      setLastGpsLng(Number(visitas.gps_longitud_visita));
+    }
+    
+    if(selectedScheduleDay === "2"){
+      setLastGpsLat(null);
+      setLastGpsLng(null);
+    }
+  }, [selectedScheduleDay])
+
+  const showMap =
+  selectedPilot &&
+  selectedStore &&
+  visitas &&
+  lastGpsLat !== null &&
+  lastGpsLng !== null
 
   return (
     <div className="py-8 px-4">
       <div className="w-full max-w-7xl mx-auto">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Volver a la lista</span>
+        </button>
         <div className={`grid transition-all duration-700 ease-in-out ${showMap ? 'grid-cols-1 lg:grid-cols-2 gap-8' : 'grid-cols-1 place-items-center'}`}>
           <div className={`w-full transition-all duration-700 ease-in-out ${showMap ? 'max-w-none' : 'max-w-[500px]'}`}>
             <div className="relative">
@@ -267,38 +339,7 @@ export function DeliveryView() {
                     ) : storesError ? (
                       <p className="text-red-500">{storesError}</p>
                     ) : ( 
-                      <Combobox
-                        disabled={!selectedPilot}
-                        options={stores.map((store) => ({
-                          id: store.id_tienda.toString(),
-                          name: store.nombre_tienda,
-                          empresa: store.codigo_empresa,
-                          lat: store.latitud,
-                          lng: store.altitud
-                        }))}
-                        value={selectedStore ? selectedStore.id_tienda.toString() : ""}
-                        onChange={(id) => {
-                          const store = stores.find((s) => s.id_tienda.toString() === id);
-                          if (store) {
-                            setSelectedStore({
-                              id_tienda: store.id_tienda,
-                              nombre_tienda: store.nombre_tienda,
-                              direccion_tienda: store.direccion_tienda,
-                              codigo_empresa: store.codigo_empresa,
-                              latitud: store.latitud ?? 0,
-                              altitud: store.altitud ?? 0,
-                              id_departamento: store.id_departamento,
-                              nombre_empresa: store.nombre_empresa,
-                              codigo_tienda: store.codigo_tienda,
-                              division: store.division,
-                            });
-                          }
-                        }}
-                        placeholder="Seleccionar tienda"
-                        searchPlaceholder="Buscar Tienda"
-                        emptyMessage="No se encontró tienda"
-                        className="text-gray-900"
-                      />
+                      <p className="text-gray-900">{selectedStore?.nombre_tienda}</p>
                     )}
                   </div>
                   <div>
@@ -351,7 +392,7 @@ export function DeliveryView() {
                   <Button
                     onClick={createVisita}
                     className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] w-full mt-2"
-                    disabled={!selectedPilot || !selectedStore || !selectedTipoVisita || !routeLoaded}
+                    disabled={!selectedPilot || !selectedStore || !selectedTipoVisita || (selectedScheduleDay === "1" && !routeLoaded)}
                   >
                     Agregar Visita
                   </Button>
@@ -420,6 +461,20 @@ export function DeliveryView() {
                           </div>
                         </>
                       )}
+                      {confirmationStatus === "finished" && (
+                        <>
+                          <div className="bg-green-50 rounded-xl p-3 border border-green-200">
+                            <div className="flex items-center justify-center">
+                              <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                              <p className="text-green-700">Supervisor ha finalizado la visita</p>
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-xl p-2 border border-yellow-600">
+                            <div className="flex items-center justify-between">
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <Button
                       onClick={handleReset}
@@ -459,7 +514,7 @@ export function DeliveryView() {
               )}
             </div>
           </div>
-          {showMap && selectedScheduleDay === "1" && (
+          {showMap && (
               <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 lg:sticky lg:top-4">
                 <h3 className="text-gray-900 mb-4 text-center">Ubicaciones</h3>
                 <div className="h-[500px]">
@@ -471,8 +526,8 @@ export function DeliveryView() {
                       direction: selectedStore.direccion_tienda
                     }}
                     lastVisit={{
-                      lat: visitas.gps_latitud_visita,
-                      lng: visitas.gps_longitud_visita,
+                      lat: lastGpsLat,
+                      lng: lastGpsLng,
                       name: visitas.nombre_tienda,
                       direction: visitas.direccion_tienda}}
                     onRouteLoaded={() => setRouteLoaded(true)}

@@ -1,6 +1,5 @@
 import { TiendaModulo } from "../types/TiendaModulo";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+import { authFetch } from "../utils/auth-fetch";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -11,11 +10,27 @@ function getAuthHeaders() {
 }
 
 export async function getAllTiendas(cod_tienda: string): Promise<TiendaModulo[]> {
-  const response = await fetch(
-    `${BASE_URL}/tiendas/getAllTiendas/${cod_tienda}`,
+  const response = await authFetch(
+    `/tiendas/getAllTiendas/${cod_tienda}`,
     {
       headers: getAuthHeaders()
     }
+    
+  );
+
+  if (!response.ok) {
+    throw new Error("Error al obtener tiendas");
+  }
+  return response.json();
+}
+
+export async function getTiendaByIdAndEmpresa(cod_tienda: string, cod_empresa: string): Promise<TiendaModulo> {
+  const response = await authFetch(
+    `/tiendas/getTiendaByIdAndEmpresa/${cod_tienda}/${cod_empresa}`,
+    {
+      headers: getAuthHeaders()
+    }
+    
   );
   if (!response.ok) {
     throw new Error("Error al obtener tiendas");

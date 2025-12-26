@@ -1,6 +1,8 @@
 import { TipoVisita } from "../types/TipoVisita";
 import { Visita } from "../types/Visita";
 import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "../types/VisitaEmergencia";
+import { authFetch } from "../utils/auth-fetch";
+
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -17,8 +19,8 @@ export async function getVisitaBySupervisor(
   fechaInicio: string,
   fechaFin: string
 ): Promise<Visita[]> {
-  const response = await fetch(
-    `${BASE_URL}/visitas/getVisitaBySupervisor/${codigoUsuario}?startDate=${fechaInicio}&endDate=${fechaFin}`,
+  const response = await authFetch(
+    `/visitas/getVisitaBySupervisor/${codigoUsuario}?startDate=${fechaInicio}&endDate=${fechaFin}`,
     {
       headers: getAuthHeaders()
     }
@@ -31,8 +33,8 @@ export async function getVisitaBySupervisor(
 }
 
 export async function getLastVisitaBySupervisor(codigoUsuario: string): Promise<Visita | null> {
-  const response = await fetch(
-    `${BASE_URL}/visitas/getUltimaVisitaBySupervisor/${codigoUsuario}`,
+  const response = await authFetch(
+    `/visitas/getUltimaVisitaBySupervisor/${codigoUsuario}`,
     {
       headers: getAuthHeaders()
     }
@@ -46,13 +48,12 @@ export async function getLastVisitaBySupervisor(codigoUsuario: string): Promise<
 }
 
 export async function getTiposVisita(): Promise<TipoVisita[]> {
-  const response = await fetch(
-    `${BASE_URL}/visitas/getTiposVisita`,
+  const response = await authFetch(
+    `/visitas/getTiposVisita`,
     {
       headers: getAuthHeaders()
     }
   );
-
   if (!response.ok) {
     throw new Error("Error al obtener tipos de visita");
   }
@@ -60,7 +61,7 @@ export async function getTiposVisita(): Promise<TipoVisita[]> {
 }
 
 export async function createVisitaEmergencia(data: VisitaEmergencia) {
-  const response = await fetch(`${BASE_URL}/visitas/createVisitaEmergencia`, {
+  const response = await authFetch(`/visitas/createVisitaEmergencia`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(data)
@@ -74,8 +75,8 @@ export async function createVisitaEmergencia(data: VisitaEmergencia) {
 }
 
 export async function getVisitasEmergenciaById(id_visita: string): Promise<VisitaEmergencia | null> {
-  const response = await fetch(
-    `${BASE_URL}/visitas/getVisitasEmergenciaById/${id_visita}`,
+  const response = await authFetch(
+    `/visitas/getVisitasEmergenciaById/${id_visita}`,
     {
       headers: getAuthHeaders()
     }
@@ -87,9 +88,22 @@ export async function getVisitasEmergenciaById(id_visita: string): Promise<Visit
   return response.json();
 }
 
+export async function getVisitasEmergenciaByCaso(id_caso: string): Promise<VwDetalleVisitaEmergencia | null> {
+  const response = await authFetch(`/visitas/getVisitasEmergenciaByCaso/${id_caso}`);
+
+  if (response.status === 404) return null;
+
+  if (!response.ok) {
+    throw new Error("Error al obtener visita");
+  }
+
+  return response.json();
+}
+
+
 export async function getVisitasEmergencia(): Promise<VwDetalleVisitaEmergencia[]> {
-  const response = await fetch(
-    `${BASE_URL}/visitas/getVisitasEmergencia`,
+  const response = await authFetch(
+    `/visitas/getVisitasEmergencia`,
     {
       headers: getAuthHeaders()
     }

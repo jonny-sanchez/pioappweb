@@ -1,0 +1,305 @@
+import { useEffect, useState } from "react";
+import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen } from "lucide-react";
+import { Input } from "./ui/input";
+import { getCasosByDivision } from "./api/CasoApi";
+import { getVisitasEmergenciaByCaso } from "./api/VisitaApi";
+import { VwDetalleCaso } from "./types/Caso";
+import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
+import { useAuth } from "./api/context/AuthContext";
+
+interface CasesViewProps {
+    onNavigate: (view: "casos" | "caso-detalle" | "agregar" | "emergencia-detalle") => void;
+    onSelectCaso: (caso: VwDetalleCaso) => void;
+    onSelectEmergencyVisit: (visit: VwDetalleVisitaEmergencia) => void;
+}
+
+export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } : CasesViewProps) {
+    const [estado, setEstado] = useState<"all" | "Asignado" | "En Proceso" | "Finalizado">("all");
+    const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
+    const [division, setDivision] = useState<1 | 2>(1);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [casos, setCasos] = useState<VwDetalleCaso[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const { user } = useAuth();
+    const idRol = user?.rol != null ? String(user.rol) : null;
+
+    const fetchCasos = async () => {
+        try {
+            const data = await getCasosByDivision(division);
+            setCasos(data);
+        } catch (err) {
+            setError((err as Error).message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        let isMounted = true;
+
+        fetchCasos();
+
+        const intervalId = setInterval(fetchCasos, 5000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(intervalId);
+        };
+    }, [division]);
+
+    const filteredCasos = casos.filter(caso => {
+        const matchesStatus = estado === "all" || caso.estado === estado;
+    
+        const matchesSearch = searchQuery === "" || 
+            caso.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            caso.impacto.toString().includes(searchQuery.toLowerCase()) ||
+            caso.urgencia.toLowerCase().includes(searchQuery.toLowerCase());
+    
+        return matchesStatus && matchesSearch;
+    });
+
+    const handleSelectCaso = async (caso: VwDetalleCaso) => {
+  try {
+    setLoading(true);
+
+    const visita = await getVisitasEmergenciaByCaso(caso.id_caso);
+    if (visita) {
+      onSelectEmergencyVisit(visita);
+    } else {
+      onSelectCaso(caso);
+      onNavigate(idRol === "7" ? "agregar" : "caso-detalle");
+    }
+
+  } catch (error: any) {
+    onSelectCaso(caso);
+    onNavigate("agregar");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Asignado":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "En Proceso":
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
+      case "Finalizado":
+        return "bg-green-50 text-green-700 border-green-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "Asignada":
+        return "Asignada";
+      case "Confirmada":
+        return "Confirmada";
+      default:
+        return status;
+    }
+  };
+
+  const pendingCount = casos.filter(c => c.estado === "Asignado").length;
+  const inProcessCount = casos.filter(c => c.estado === "En Proceso").length;
+  const finishedCount = casos.filter(c => c.estado === "Finalizado").length;
+
+  return (
+    <div className="max-w-6xl mx-auto p-10">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-xl flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-gray-900" />
+          </div>
+          <div>
+            <h1 className="text-gray-900">Lista de Casos</h1>
+            <p className="text-gray-600">Gestiona los casos creados y asignados</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <p className="text-gray-600 text-sm mb-1">Total de Casos</p>
+            <p className="text-gray-900 text-2xl">{casos.length}</p>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <p className="text-blue-600 text-sm mb-1">Asignados</p>
+            <p className="text-blue-700 text-2xl">{pendingCount}</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 border border-yellow-200">
+            <p className="text-yellow-600 text-sm mb-1">En Proceso</p>
+            <p className="text-yellow-700 text-2xl">{inProcessCount}</p>
+          </div>
+          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+            <p className="text-green-600 text-sm mb-1">Finalizados</p>
+            <p className="text-green-700 text-2xl">{finishedCount}</p>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setDivision(1)}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              division === 1
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            División 1
+          </button>
+          <button
+            onClick={() => setDivision(2)}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              division === 2
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            División 2
+          </button>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setEstado("all")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              estado === "all"
+                ? "bg-gray-400 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Todos ({casos.length})
+          </button>
+          <button
+            onClick={() => setEstado("Asignado")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              estado === "Asignado"
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Asignados ({pendingCount})
+          </button>
+          <button
+            onClick={() => setEstado("En Proceso")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              estado === "En Proceso"
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            En Proceso ({inProcessCount})
+          </button>
+          <button
+            onClick={() => setEstado("Finalizado")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              estado === "Finalizado"
+                ? "bg-green-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Finalizados ({finishedCount})
+          </button>
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-00 p-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 w-5 h-5" />
+          <Input
+            type="text"
+            placeholder="Buscar por supervisor, ID o tienda..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12 border-gray-300 focus:border-[#fcb900] focus:ring-[#fcb900] text-gray-900"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-gray-600 text-sm mt-2">
+            Se encontraron <span className="text-gray-900">{filteredCasos.length}</span> resultado
+            {filteredCasos.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+      <div className="space-y-4">
+        {filteredCasos.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
+            <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">No hay casos con este filtro</p>
+          </div>
+        ) : (
+          filteredCasos.map((casos) => (
+            <button
+            key={casos.id_caso}
+            onClick={() => handleSelectCaso(casos)}
+            className="w-full bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 text-left"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-gray-900">Caso: {casos.id_caso}</span>
+                    <span className={`px-3 py-1 rounded-lg border text-sm ${getStatusColor(casos.estado)}`}>
+                      {(casos.estado)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Urgencia</p>
+                        <p className="text-gray-900">{casos.urgencia}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Tienda</p>
+                        <p className="text-gray-900">{casos.tienda_nombre}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Layers className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Tipo de Solicitud</p>
+                        <p className="text-gray-900">{casos.tipo_solicitud}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Folder className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Categoria</p>
+                        <p className="text-gray-900 text-sm">{casos.categoria}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Target className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Impacto</p>
+                        <p className="text-gray-900">{casos.impacto}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <FolderOpen className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Subcategoria</p>
+                        <p className="text-gray-900 text-sm">{casos.subcategoria}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <p className="text-gray-500 text-sm mb-1">Mensaje</p>
+                    <p className="text-gray-700">{casos.mensaje}</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6 text-gray-400 flex-shrink-0 mt-2" />
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./src/Header";
 import { HomeView } from "./src/HomeView";
 import { VisitsView } from "./src/VisitsView";
@@ -9,46 +9,106 @@ import { EmergencyVisitDetail } from "./src/EmergencyVisitDetail";
 import { LoginView } from "./src/LoginView";
 import { Home, LogOut, X } from "lucide-react";
 import { VwDetalleVisitaEmergencia } from "./src/types/VisitaEmergencia";
+import { VwDetalleCaso } from "./src/types/Caso";
+import { CaseView } from "./src/CaseView";
+import { CasesView } from "./src/CasesView";
+import { CaseDetail } from "./src/CaseDetailView";
+import { useAuth } from "./src/api/context/AuthContext";
 
 type View =
   | "home"
   | "visitas"
   | "agregar"
   | "emergencias"
-  | "emergencia-detalle";
+  | "emergencia-detalle"
+  | "caso"
+  | "casos"
+  | "caso-detalle";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("home");
+  const [previousView, setPreviousView] = useState<View | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedEmergencyVisit, setSelectedEmergencyVisit] =
-    useState<VwDetalleVisitaEmergencia | null>(null);
+  const [selectedEmergencyVisit, setSelectedEmergencyVisit] = useState<VwDetalleVisitaEmergencia | null>(null);
+  const [selectedCase, setSelectedCase] = useState<VwDetalleCaso | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const idRol = user?.rol != null ? String(user.rol) : null;
+
+  function getJwtExpMs(token: string): number | null {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return typeof payload?.exp === "number" ? payload.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function isJwtExpired(token: string, skewMs = 5000): boolean {
+    const expMs = getJwtExpMs(token);
+    if (!expMs) return false;
+    return Date.now() >= expMs - skewMs;
+  }
+  
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || isJwtExpired(token)) {
+      localStorage.clear();
+      setIsAuthenticated(false);
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
 
   const handleLogin = () => {
     setIsAuthenticated(true);
-    setCurrentView("home");
+    navigateTo("home");
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setCurrentView("home");
+    navigateTo("home");
     setIsMobileMenuOpen(false);
     localStorage.clear();
   };
 
-  const handleSelectEmergencyVisit = (
-    visit: VwDetalleVisitaEmergencia
-  ) => {
+  const handleSelectEmergencyVisit = (visit: VwDetalleVisitaEmergencia) => {
     setSelectedEmergencyVisit(visit);
-    setCurrentView("emergencia-detalle");
+    navigateTo("emergencia-detalle");
   };
 
-  const handleBackFromDetail = () => {
-    setSelectedEmergencyVisit(null);
-    setCurrentView("emergencias");
+
+  const handleSelectCase = (
+    caso: VwDetalleCaso
+  ) => {
+    setSelectedCase(caso);
+    navigateTo("caso-detalle");
   };
 
-  if (!isAuthenticated) {
+  const navigateTo = (view: View) => {
+    setPreviousView(currentView)
+    setCurrentView(view);
+  };
+
+  const handleBack = () => {
+    if (previousView) {
+      setCurrentView(previousView);
+    } else {
+      setCurrentView("home");
+    }
+  };
+
+  const handleBackFromDeliveryView = () => {
+  if (previousView) {
+    setCurrentView(previousView);
+  } else {
+    setCurrentView("casos");
+  }
+};
+
+
+  if (isAuthenticated === false) {
     return <LoginView onLogin={handleLogin} />;
   }
 
@@ -56,30 +116,48 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={navigateTo}
         onLogout={handleLogout}
         onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         isMobileMenuOpen={isMobileMenuOpen}
       />
-
       <div className="flex pt-[60px]">
         <div className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 lg:mr-64">
           <div className="max-w-6xl mx-auto">
             {currentView === "home" && (
-              <HomeView onNavigate={setCurrentView} />
+              <HomeView onNavigate={navigateTo} />
             )}
             {currentView === "visitas" && <VisitsView />}
-            {currentView === "agregar" && <DeliveryView />}
+            {currentView === "agregar" && (
+              <DeliveryView
+                caso={selectedCase!}
+                onBack={handleBackFromDeliveryView}
+              />
+            )}
+            {currentView === "caso" && <CaseView/>}
+            {currentView === "casos" && (
+              <CasesView
+                onNavigate={navigateTo}
+                onSelectCaso={handleSelectCase}
+                onSelectEmergencyVisit={handleSelectEmergencyVisit}
+              />
+            )}
+            {currentView === "caso-detalle" && (
+              <CaseDetail
+                caso={selectedCase!}
+                onBack={handleBack}
+              />
+            )}
             {currentView === "emergencias" && (
               <EmergencyVisitsView
-                onNavigate={setCurrentView}
+                onNavigate={navigateTo}
                 onSelectVisit={handleSelectEmergencyVisit}
               />
             )}
             {currentView === "emergencia-detalle" && (
               <EmergencyVisitDetail
                 visit={selectedEmergencyVisit!}
-                onBack={handleBackFromDetail}
+                onBack={handleBack}
               />
             )}
           </div>
@@ -91,7 +169,7 @@ export default function App() {
             </div>
             <nav className="space-y-3">
               <button
-                onClick={() => setCurrentView("home")}
+                onClick={() => navigateTo("home")}
                 className="w-full text-left px-5 py-4 rounded-xl transition-all text-gray-700 hover:bg-gray-100 flex items-center group"
               >
                 <Home
@@ -130,7 +208,7 @@ export default function App() {
                 <nav className="space-y-3">
                   <button
                     onClick={() => {
-                      setCurrentView("home");
+                      navigateTo("home");
                       setIsMobileMenuOpen(false);
                     }}
                     className="w-full text-left px-5 py-4 rounded-xl transition-all text-gray-700 hover:bg-gray-100 flex items-center"

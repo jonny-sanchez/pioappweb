@@ -22,20 +22,36 @@ interface EmergencyVisitDetailProps {
 export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProps) {
   const [confirmationStatus, setConfirmationStatus] = useState<"waiting" | "confirmed" | "finished" | null>(null);
   const [timeEstimate, setTimeEstimate] = useState<string | null>(null);
+  const [lastGpsLat, setLastGpsLat] = useState<number | null>(
+  visit.last_gps_latitude !== null
+    ? Number(visit.last_gps_latitude)
+    : null
+);
+
+const [lastGpsLng, setLastGpsLng] = useState<number | null>(
+  visit.last_gps_longitude !== null
+    ? Number(visit.last_gps_longitude)
+    : null
+);
+
 
   useEffect(() => {
       const visitaId = visit.id_visita.toString();
       const interval = setInterval(async () => {
         try {
           const updatedVisita = await getVisitasEmergenciaById(visitaId);
-  
+          if (!updatedVisita) return;
+          if (updatedVisita.last_gps_latitude && updatedVisita.last_gps_longitude) {
+            setLastGpsLat(Number(updatedVisita.last_gps_latitude));
+            setLastGpsLng(Number(updatedVisita.last_gps_longitude));
+          }
           if (updatedVisita?.id_estado === 2) {
             setConfirmationStatus("confirmed");
-            clearInterval(interval);
           } else if (updatedVisita?.id_estado === 1) {
             setConfirmationStatus("waiting");
-          } else if(updatedVisita?.id_estado === 1) {
+          } else if(updatedVisita?.id_estado === 3) {
             setConfirmationStatus("finished");
+            clearInterval(interval);
           }
         } catch (err) {
           console.error("Error al consultar estado de la visita:", err);
@@ -46,14 +62,14 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
     }, [visit.id_visita]);
 
   const lastVisitLocation =
-    visit.last_gps_latitude !== null &&
-    visit.last_gps_longitude !== null
-      ? {
-          lat: Number(visit.last_gps_latitude),
-          lng: Number(visit.last_gps_longitude),
-          name: "Última visita",
-        }
-      : null;
+  lastGpsLat !== null && lastGpsLng !== null
+    ? {
+        lat: lastGpsLat,
+        lng: lastGpsLng,
+        name: "Última visita",
+      }
+    : null;
+
 
   const newVisitLocation = {
     lat: Number(visit.new_gps_latitude),
@@ -62,10 +78,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   };
 
   const formatDateTime = (value?: string | Date | null) => {
-    console.log(visit.last_gps_latitude)
-    console.log(visit.last_gps_longitude)
-    console.log(visit.new_gps_latitude)
-    console.log(visit.new_gps_longitude)
     if (!value) {
       return "Fecha no disponible";
     }
@@ -109,7 +121,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-6">
+    <div className="max-w-7xl mx-auto py-10">
       <div className="mb-2">
         <button
           onClick={onBack}
@@ -215,7 +227,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
               {confirmationStatus === "finished" && (
                 <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">
                   <div className="flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-gray-600 mr-2 animate-spin" />
+                    <CheckCircle className="w-5 h-5 text-gray-600 mr-2" />
                     <p className="text-gray-700">Visita Finalizada</p>
                   </div>
                 </div>
@@ -228,7 +240,12 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
           <div className="h-[600px]">
             <MapView
               lastVisit={lastVisitLocation}
-              newVisit={newVisitLocation}
+              newVisit={{
+                lat: Number(visit.new_gps_latitude),
+                lng: Number(visit.new_gps_longitude),
+                name: "Destino",
+              }}
+              onTimeCalculated={(eta) => setTimeEstimate(eta)}
             />
           </div>
         </div>
