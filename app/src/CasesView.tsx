@@ -14,7 +14,7 @@ interface CasesViewProps {
 }
 
 export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } : CasesViewProps) {
-    const [estado, setEstado] = useState<"all" | "Asignado" | "En Proceso" | "Finalizado">("all");
+    const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado">("all");
     const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
     const [division, setDivision] = useState<1 | 2>(1);
     const [searchQuery, setSearchQuery] = useState("");
@@ -81,7 +81,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Asignado":
+      case "Creado":
         return "bg-blue-50 text-blue-700 border-blue-200";
       case "En Proceso":
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
@@ -94,8 +94,8 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "Asignada":
-        return "Asignada";
+      case "Creado":
+        return "Creado";
       case "Confirmada":
         return "Confirmada";
       default:
@@ -103,7 +103,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
     }
   };
 
-  const pendingCount = casos.filter(c => c.estado === "Asignado").length;
+  const pendingCount = casos.filter(c => c.estado === "Creado").length;
   const inProcessCount = casos.filter(c => c.estado === "En Proceso").length;
   const finishedCount = casos.filter(c => c.estado === "Finalizado").length;
 
@@ -116,7 +116,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
           </div>
           <div>
             <h1 className="text-gray-900">Lista de Casos</h1>
-            <p className="text-gray-600">Gestiona los casos creados y asignados</p>
+            <p className="text-gray-600">Gestiona los casos creados y en proceso</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
@@ -125,7 +125,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
             <p className="text-gray-900 text-2xl">{casos.length}</p>
           </div>
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-            <p className="text-blue-600 text-sm mb-1">Asignados</p>
+            <p className="text-blue-600 text-sm mb-1">Creados</p>
             <p className="text-blue-700 text-2xl">{pendingCount}</p>
           </div>
           <div className="bg-red-50 rounded-xl p-4 border border-yellow-200">
@@ -175,14 +175,14 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
             Todos ({casos.length})
           </button>
           <button
-            onClick={() => setEstado("Asignado")}
+            onClick={() => setEstado("Creado")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "Asignado"
+              estado === "Creado"
                 ? "bg-blue-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            Asignados ({pendingCount})
+            Creados ({pendingCount})
           </button>
           <button
             onClick={() => setEstado("En Proceso")}
