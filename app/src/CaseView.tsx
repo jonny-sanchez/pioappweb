@@ -249,7 +249,7 @@ export function CaseView() {
                       <Combobox
                         options={stores.map((store) => ({
                           id: store.id_tienda.toString(),
-                          name: store.nombre_tienda,
+                          name: store.nombre_tienda + " | DIVISIÓN " + store.division,
                           empresa: store.codigo_empresa,
                           lat: store.latitud,
                           lng: store.altitud

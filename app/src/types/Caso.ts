@@ -15,6 +15,7 @@ export interface CasoModel {
   userUpdatedAt?: number;
   createdAt?: string;
   updatedAt?: string;
+  correlativo?: number;
 }
 
 export interface VwDetalleCaso {
@@ -30,4 +31,5 @@ export interface VwDetalleCaso {
   categoria: string;
   subcategoria: string;
   mensaje: string;
+  correlativo: number;
 }

@@ -240,7 +240,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-gray-900">Caso: {casos.id_caso}</span>
+                    <span className="text-gray-900">Caso: {casos.correlativo}</span>
                     <span className={`px-3 py-1 rounded-lg border text-sm ${getStatusColor(casos.estado)}`}>
                       {(casos.estado)}
                     </span>
