@@ -476,12 +476,6 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                         </>
                       )}
                     </div>
-                    <Button
-                      onClick={handleReset}
-                      className="bg-gray-900 text-white hover:bg-gray-800 w-full"
-                    >
-                      Nueva Asignación
-                    </Button>
                   </div>
               </div>
               )}

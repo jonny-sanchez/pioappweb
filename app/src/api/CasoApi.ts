@@ -88,17 +88,17 @@ export async function getSubcategoriaByCategoria(id_categoria: number): Promise<
 }
 
 export async function createCaso(data: CasoModel) {
-  const response = await authFetch(`/casos/createCaso`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data)
-  });
+    const response = await authFetch(`/casos/createCaso`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+    });
 
-  if (!response.ok) {
-    throw new Error("Error al crear caso");
-  }
+    if (!response.ok) {
+        throw new Error("Error al crear caso");
+    }
 
-  return response.json();
+    return response.json();
 }
 
 export async function getCasosByDivision(division: number): Promise<VwDetalleCaso[]> {

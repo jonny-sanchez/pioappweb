@@ -191,6 +191,7 @@ export function CaseView() {
                 id_subcategoria: Number(selectedSubcategoria),
                 mensaje: comments,
             })
+            
             if (caso.message) {
                     setErrorMessage(caso.message);
                     setShowError(true);

@@ -10,7 +10,7 @@ interface EmergencyVisitsViewProps {
 }
 
 export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVisitsViewProps) {
-  const [filter, setFilter] = useState<"all" | "Asignada" | "Confirmada" | "Finalizada" | "Atrasada">("all");
+  const [filter, setFilter] = useState<"all" | "Asignada" | "En Proceso" | "Finalizada" | "Atrasada">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [visitas, setVisitas] = useState<VwDetalleVisitaEmergencia[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -126,13 +126,13 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             <AlertCircle className="w-6 h-6 text-gray-900" />
           </div>
           <div>
-            <h1 className="text-gray-900">Visitas de Emergencia</h1>
-            <p className="text-gray-600">Gestiona visitas urgentes pendientes de confirmación</p>
+            <h1 className="text-gray-900">Tareas</h1>
+            <p className="text-gray-600">Gestiona y monitorea las tareas urgentes</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-6">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <p className="text-gray-600 text-sm mb-1">Total de Visitas</p>
+            <p className="text-gray-600 text-sm mb-1">Total de Tareas</p>
             <p className="text-gray-900 text-2xl">{visitas.length}</p>
           </div>
           <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
@@ -140,7 +140,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             <p className="text-blue-700 text-2xl">{pendingCount}</p>
           </div>
           <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-            <p className="text-yellow-600 text-sm mb-1">Confirmadas</p>
+            <p className="text-yellow-600 text-sm mb-1">En Proceso</p>
             <p className="text-yellow-700 text-2xl">{inProgressCount}</p>
           </div>
           <div className="bg-green-50 rounded-xl p-4 border border-green-200">
@@ -176,19 +176,19 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
             Asignadas ({pendingCount})
           </button>
           <button
-            onClick={() => setFilter("Confirmada")}
+            onClick={() => setFilter("En Proceso")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "Confirmada"
+              filter === "En Proceso"
                 ? "bg-yellow-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            Confirmadas ({inProgressCount})
+            En Proceso ({inProgressCount})
           </button>
           <button
             onClick={() => setFilter("Finalizada")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "Confirmada"
+              filter === "En Proceso"
                 ? "bg-green-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
