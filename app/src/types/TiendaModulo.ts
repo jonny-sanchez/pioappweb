@@ -11,4 +11,5 @@ export interface TiendaModulo {
   numero_establecimiento_sat?: number;
   division: string;
   inactiva?: boolean;
+  codigo_administrador?: string;
 }

@@ -22,3 +22,15 @@ export async function getAllSupervisors(): Promise<Supervisor[]> {
   }
   return response.json();
 }
+
+export async function getSupervisorBycodEmpleado(codE: string): Promise<Supervisor> {
+  const response = await authFetch(`/supervisores/getSupervisorBycodEmpleado/${codE}`,
+    {
+      headers: getAuthHeaders()
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Error al obtener supervisor");
+  }
+  return response.json();
+}

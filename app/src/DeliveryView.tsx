@@ -6,7 +6,7 @@ import { Supervisor } from "../src/types/Supervisor";
 import { Visita } from "../src/types/Visita";
 import { TiendaModulo } from "../src/types/TiendaModulo";
 import { TipoVisita } from "../src/types/TipoVisita";
-import { getAllSupervisors } from "../src/api/SupervisorApi";
+import { getAllSupervisors, getSupervisorBycodEmpleado } from "../src/api/SupervisorApi";
 import { getTiendaByIdAndEmpresa } from "../src/api/TiendaModuloApi";
 import { Combobox } from "./ui/combobox";
 import { MapView } from "./MapView";
@@ -44,7 +44,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [storesError, setStoresError] = useState<string | null>(null);
   const [selectedStore, setSelectedStore] = useState<TiendaModulo | null>(null);
-  const [selectedPilot, setSelectedPilot] = useState("");
+  const [selectedPilot, setSelectedPilot] = useState<Supervisor | null>(null);
   const [selectedTipoVisita, setSelectedTipoVisita] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [confirmationStatus, setConfirmationStatus] = useState<"waiting" | "confirmed" | "finished" | null>(null);
@@ -62,31 +62,33 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
     { id: "2", name: "Mañana" },
   ];
 
-  const fetchStore = async () => {
-    if (!caso?.id_tienda || !caso?.id_empresa) return;
-    
-    try {
-      const tienda = await getTiendaByIdAndEmpresa(caso.id_tienda,caso.id_empresa);
-      setStore(tienda);
-      console.log(tienda)
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
+  const fetchStoreAndSup = async () => {
+  if (!caso?.id_tienda || !caso?.id_empresa) return;
+
+  try {
+    const tienda = await getTiendaByIdAndEmpresa(caso.id_tienda, caso.id_empresa);
+    setStore(tienda);
+
+    const sup = await getSupervisorBycodEmpleado(tienda?.codigo_administrador || "0");
+    setSelectedPilot(sup);
+  } catch (err) {
+    setError((err as Error).message);
+  }
+};
+
 
 
   useEffect(() => {
-    fetchStore();
+    fetchStoreAndSup();
   }, [caso])
 
   useEffect(() => {
     setSelectedStore(store);
-    console.log(store?.nombre_tienda)
   }, [store])
   
   useEffect(() => {
-    console.log("Tienda seleccionada", selectedStore);
-  }, [selectedStore])
+    console.log("Tienda seleccionada", selectedStore, "Supervisor: ", selectedPilot);
+  }, [selectedStore, selectedPilot])
 
   useEffect(() => {
     const fetchSupervisors = async () => {
@@ -134,17 +136,12 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const handleReset = () => {
     setShowSuccess(false);
     setShowError(false);
-    setSelectedPilot("");
+    setSelectedPilot(null);
     setSelectedStore(null);
     setSelectedTipoVisita("");
     setConfirmationStatus(null);
     setComments("");
   };
-
-  const getPilotName = () => {
-    const supervisor = supervisors.find((s) => s.codsupervisor.toString() === selectedPilot);
-    return supervisor ? supervisor.nomsupervisor : "";
-  }
 
   const getTipoVisitaName = () => {
     const tipo = tiposVisita.find((t) => t.id_tipo_visita === Number(selectedTipoVisita));
@@ -157,7 +154,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
     if (!selectedPilot) return;
 
     try {
-      const data = await getLastVisitaBySupervisor(selectedPilot);
+      const data = await getLastVisitaBySupervisor(selectedPilot.codsupervisor);
       setVisitas(data);
       setUltimaVisitaValidada(true);
 
@@ -202,8 +199,8 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
         comentario: comments,
         id_estado: 1,
         fecha_programacion: fecha,
-        user_asignado: selectedPilot,
-        nombre_user_asignado: getPilotName(),
+        user_asignado: selectedPilot.codsupervisor,
+        nombre_user_asignado: selectedPilot.nomsupervisor,
         id_caso: caso?.id_caso || ""
       })
 
@@ -292,26 +289,20 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <Label htmlFor="pilot" className="text-gray-900 mb-2 block">Supervisor</Label>
-                    {loading ? (
-                      <p className="bg-gray-50 border-gray-300 text-gray-500">Cargando supervisores...</p>
-                    ) : error ? (
-                      <p className="text-red-500">{error}</p>
-                    ) : (
-                      <Combobox              
-                        options={supervisors.map((supervisor) => ({
-                          id: supervisor.codsupervisor.toString(),
-                          name: supervisor.nomsupervisor
-                        }))}
-                        value={selectedPilot}
-                        onChange={setSelectedPilot}
-                        placeholder="Seleccionar supervisor"
-                        searchPlaceholder="Buscar Supervisor"
-                        emptyMessage="No se encontró Supervisor"
-                        className="text-gray-900"
-                      />
-                    )}
-                  </div>
+  <Label className="text-gray-900 mb-2 block">Supervisor</Label>
+  {loading ? (
+    <p className="text-gray-500">Cargando supervisor...</p>
+  ) : error ? (
+    <p className="text-red-500">{error}</p>
+  ) : (
+    <p className="text-gray-900">
+      {selectedPilot
+        ? selectedPilot.nomsupervisor
+        : "No hay supervisor asignado"}
+    </p>
+  )}
+</div>
+
                   {visitas && ultimaVisitaValidada && (
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                       <Label className="text-gray-600 mb-2 flex items-center">

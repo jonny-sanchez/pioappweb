@@ -188,7 +188,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
           <button
             onClick={() => setFilter("Finalizada")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "En Proceso"
+              filter === "Finalizada"
                 ? "bg-green-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}

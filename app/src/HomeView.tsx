@@ -46,10 +46,10 @@ export function HomeView({ onNavigate }: HomeViewProps) {
                   <CalendarClock className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
                 </div>
                 <h2 className="text-gray-900 mb-2 sm:mb-3">
-                  Control de Visitas de Emergencia
+                  Control de Tareas
                 </h2>
                 <p className="text-gray-600 text-sm sm:text-base">
-                  Consulta y gestiona las visitas de emergencia activas
+                  Consulta y gestiona las tareas activas
                 </p>
               </div>
             </button>
