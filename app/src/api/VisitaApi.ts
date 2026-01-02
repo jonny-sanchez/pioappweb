@@ -1,5 +1,5 @@
 import { TipoVisita } from "../types/TipoVisita";
-import { Visita } from "../types/Visita";
+import { Visita, Vw_visita_pioapp } from "../types/Visita";
 import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "../types/VisitaEmergencia";
 import { authFetch } from "../utils/auth-fetch";
 
@@ -18,7 +18,7 @@ export async function getVisitaBySupervisor(
   codigoUsuario: string,
   fechaInicio: string,
   fechaFin: string
-): Promise<Visita[]> {
+): Promise<Vw_visita_pioapp[]> {
   const response = await authFetch(
     `/visitas/getVisitaBySupervisor/${codigoUsuario}?startDate=${fechaInicio}&endDate=${fechaFin}`,
     {
