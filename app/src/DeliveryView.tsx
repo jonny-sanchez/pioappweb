@@ -289,27 +289,23 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                 </div>
                 <div className="space-y-6">
                   <div>
-  <Label className="text-gray-900 mb-2 block">Supervisor</Label>
-  {loading ? (
-    <p className="text-gray-500">Cargando supervisor...</p>
-  ) : error ? (
-    <p className="text-red-500">{error}</p>
-  ) : (
-    <p className="text-gray-900">
-      {selectedPilot
-        ? selectedPilot.nomsupervisor
-        : "No hay supervisor asignado"}
-    </p>
-  )}
-</div>
-
+                    <Label className="text-gray-900 mb-2 block">Supervisor</Label>
+                      {loading ? (
+                        <p className="text-gray-500">Cargando supervisor...</p>
+                      ) : error ? (
+                        <p className="text-red-500">{error}</p>
+                      ) : (
+                        <p className="text-gray-900">
+                        {selectedPilot ? selectedPilot.nomsupervisor : "No hay supervisor asignado"} </p>
+                      )}
+                  </div>
                   {visitas && ultimaVisitaValidada && (
                     <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                       <Label className="text-gray-600 mb-2 flex items-center">
                         <MapPin className="w-4 h-4 mr-2 text-[#fcb900]" />
                           Última Visita
                       </Label>
-                      <p className="text-gray-900 text-sm">{visitas.nombre_tienda}</p>
+                      <p className="text-gray-900 text-sm">{visitas.tienda_nombre}</p>
                       <p className="text-gray-500 text-xs mt-1">{visitas.direccion_tienda}</p>
                     </div>
                   )}
@@ -513,7 +509,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                     lastVisit={{
                       lat: lastGpsLat,
                       lng: lastGpsLng,
-                      name: visitas.nombre_tienda,
+                      name: visitas.tienda_nombre,
                       direction: visitas.direccion_tienda}}
                     onRouteLoaded={() => setRouteLoaded(true)}
                     onTimeCalculated={(eta) => setTimeEstimate(eta)}  
