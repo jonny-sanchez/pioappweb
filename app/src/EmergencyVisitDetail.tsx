@@ -8,11 +8,14 @@ import {
   CheckCircle,
   Clock,
   Loader2,
-  Flag } from "lucide-react";
+  Flag,
+  Camera } from "lucide-react";
 import { MapView } from "./MapView";
 import { useState, useEffect } from "react";
 import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
-import { getVisitasEmergenciaById } from "./api/VisitaApi";
+import { Visita } from "./types/Visita";
+import { getVisitasEmergenciaById, getVisitaByVisitaEmergencia } from "./api/VisitaApi";
+import Image from "next/image";
 
 interface EmergencyVisitDetailProps {
   visit: VwDetalleVisitaEmergencia;
@@ -23,10 +26,9 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   const [confirmationStatus, setConfirmationStatus] = useState<"waiting" | "confirmed" | "finished" | null>(null);
   const [timeEstimate, setTimeEstimate] = useState<string | null>(null);
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(
-  visit.last_gps_latitude !== null
-    ? Number(visit.last_gps_latitude)
-    : null
-);
+    visit.last_gps_latitude !== null ? Number(visit.last_gps_latitude) : null
+  );
+  const [visita, setVisita] = useState<Visita | null>(null);
 
 const [lastGpsLng, setLastGpsLng] = useState<number | null>(
   visit.last_gps_longitude !== null
@@ -51,6 +53,9 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
             setConfirmationStatus("waiting");
           } else if(updatedVisita?.id_estado === 3) {
             setConfirmationStatus("finished");
+            const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
+            setVisita(visit)
+            console.log(visit)
             clearInterval(interval);
           }
         } catch (err) {
@@ -147,7 +152,7 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
             <h2 className="text-gray-900 mb-4">Detalles de la Visita</h2>
@@ -197,6 +202,35 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
                   </div>
                 </div>
               </div>
+              {confirmationStatus === "finished" && visita && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-blue-600 text-sm mb-1">Mensaje del supervisor</p>
+                        <p className="text-blue-900">{visita.comentario === "null" ? "Supervisor no asigna comentario a la visita" : visita.comentario}</p>
+                      </div>
+                    </div>
+                </div>
+              )}
+              {confirmationStatus === "finished" && visita && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                      <div className="flex items-start gap-3">
+                        <Camera className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="text-blue-600 text-sm mb-1">Imagen</p>
+                          <Image
+                            src={visita.url_image}
+                            width={200}
+                            height={300}
+                            alt="Logo Pinulito"
+                            priority
+                            className="object-contain"
+                            />
+                        </div>
+                      </div>
+                  </div>
+              )}
               {confirmationStatus === "waiting" && (
                 <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">
                   <div className="flex items-center justify-center">
@@ -235,7 +269,7 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 lg:sticky lg:top-4">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 lg:top-4">
           <h2 className="text-gray-900 mb-4 text-center">Ubicaciones</h2>
           <div className="h-[600px]">
             <MapView
