@@ -75,6 +75,7 @@ export async function createVisitaEmergencia(data: VisitaEmergencia) {
 }
 
 export async function getVisitasEmergenciaById(id_visita: string): Promise<VisitaEmergencia | null> {
+  console.log(id_visita)
   const response = await authFetch(
     `/visitas/getVisitasEmergenciaById/${id_visita}`,
     {
@@ -111,6 +112,18 @@ export async function getVisitasEmergencia(): Promise<VwDetalleVisitaEmergencia[
 
   if (!response.ok) {
     throw new Error("Error al obtener las visitas de emergencia");
+  }
+
+  return response.json();
+}
+
+export async function getVisitaByVisitaEmergencia(id_ve: number): Promise<Visita | null> {
+  const response = await authFetch(`/visitas/getVisitaByVisitaEmergencia/${id_ve}`);
+
+  if (response.status === 404) return null;
+
+  if (!response.ok) {
+    throw new Error("Error al obtener visita");
   }
 
   return response.json();
