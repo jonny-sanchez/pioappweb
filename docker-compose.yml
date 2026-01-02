@@ -9,10 +9,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3005:3005"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3005
     networks:
       - pioapp-network
     volumes:
@@ -21,9 +21,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pioappweb.rule=Host(`localhost`)"
-      - "traefik.http.services.pioappweb.loadbalancer.server.port=3000"
-    depends_on:
-      - nginx
+      - "traefik.http.services.pioappweb.loadbalancer.server.port=3005"
 
   # Nginx reverse proxy (optional but recommended)
   nginx:
