@@ -175,24 +175,28 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
                   </div>
                 </div>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-gray-600 mt-0.5" />
-                  <div>
-                    <p className="text-gray-500 text-sm mb-1">Tipo de Visita</p>
-                    <p className="text-gray-900">{visit.tipo_visita}</p>
+              {confirmationStatus === "finished" && visita && (
+                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
+                      <p className="text-yellow-900">{formatDateTime(visita.createdAt)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Asignación</p>
-                    <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
+              )}
+              {confirmationStatus !== "finished" && !visita && (
+                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
+                      <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <div className="flex items-start gap-3">
                   <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -208,7 +212,7 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
                       <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
                         <p className="text-blue-600 text-sm mb-1">Mensaje del supervisor</p>
-                        <p className="text-blue-900">{visita.comentario === "null" ? "Supervisor no asigna comentario a la visita" : visita.comentario}</p>
+                        <p className="text-blue-900">{visita.comentario ?? "Supervisor no asigna comentario a la visita"}</p>
                       </div>
                     </div>
                 </div>
@@ -224,8 +228,8 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
                             width={200}
                             height={300}
                             alt="Logo Pinulito"
-                            priority
                             className="object-contain"
+                            unoptimized
                             />
                         </div>
                       </div>
