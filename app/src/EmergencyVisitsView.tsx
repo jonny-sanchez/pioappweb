@@ -110,7 +110,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
   };
 
   const pendingCount = visitas.filter(v => v.estado === "Asignada").length;
-  const inProgressCount = visitas.filter(v => v.estado === "Confirmada").length;
+  const inProgressCount = visitas.filter(v => v.estado === "En Proceso").length;
   const finishedCount = visitas.filter(v => v.estado === "Finalizada").length;
   const overdueCount = visitas.filter(v => {
     if (v.estado === "Finalizada" || !v.fecha_programacion) return false;
