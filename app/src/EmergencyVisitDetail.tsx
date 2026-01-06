@@ -55,7 +55,6 @@ const [lastGpsLng, setLastGpsLng] = useState<number | null>(
             setConfirmationStatus("finished");
             const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
             setVisita(visit)
-            console.log(visit)
             clearInterval(interval);
           }
         } catch (err) {

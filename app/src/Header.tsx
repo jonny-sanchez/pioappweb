@@ -12,7 +12,8 @@ type View =
   | "emergencia-detalle"
   | "caso"
   | "casos"
-  | "caso-detalle";
+  | "caso-detalle"
+  | "caso-cierre";
 
 interface HeaderProps {
   currentView: View;
@@ -43,7 +44,6 @@ export function Header({ onMenuToggle}: HeaderProps) {
                 width={45}
                 height={50}
                 alt="Logo Pinulito"
-                priority
                 className="object-contain"
               />
             </div>

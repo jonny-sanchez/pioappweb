@@ -87,7 +87,6 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   }, [store])
   
   useEffect(() => {
-    console.log("Tienda seleccionada", selectedStore, "Supervisor: ", selectedPilot);
   }, [selectedStore, selectedPilot])
 
   useEffect(() => {
@@ -178,7 +177,6 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
     }
   };
 
-
   const createVisita = async () => {
     const fecha = new Date();
     if(selectedScheduleDay === "2") {
@@ -201,7 +199,8 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
         fecha_programacion: fecha,
         user_asignado: selectedPilot.codsupervisor,
         nombre_user_asignado: selectedPilot.nomsupervisor,
-        id_caso: caso?.id_caso || ""
+        id_caso: caso?.id_caso || "",
+        division: Number(selectedStore.division)
       })
 
       if (visitaEmergencia.message) {

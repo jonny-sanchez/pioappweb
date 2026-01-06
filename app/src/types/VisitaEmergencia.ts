@@ -19,6 +19,7 @@ export interface VisitaEmergencia {
   createdAt?: string | null;
   updatedAt?: string | null;
   id_caso: string;
+  division: number;
   EstadoVisitaEmergenciaModel?: {
     id_estado: number;
     nombre: string;
@@ -38,4 +39,5 @@ export interface VwDetalleVisitaEmergencia {
   last_gps_latitude?: string | null;
   new_gps_longitude: string;
   new_gps_latitude: string;
+  division: number;
 }

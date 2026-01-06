@@ -75,7 +75,6 @@ export async function createVisitaEmergencia(data: VisitaEmergencia) {
 }
 
 export async function getVisitasEmergenciaById(id_visita: string): Promise<VisitaEmergencia | null> {
-  console.log(id_visita)
   const response = await authFetch(
     `/visitas/getVisitasEmergenciaById/${id_visita}`,
     {
@@ -102,9 +101,9 @@ export async function getVisitasEmergenciaByCaso(id_caso: string): Promise<VwDet
 }
 
 
-export async function getVisitasEmergencia(): Promise<VwDetalleVisitaEmergencia[]> {
+export async function getVisitasEmergencia(division: number): Promise<VwDetalleVisitaEmergencia[]> {
   const response = await authFetch(
-    `/visitas/getVisitasEmergencia`,
+    `/visitas/getVisitasEmergencia/${division}`,
     {
       headers: getAuthHeaders()
     }

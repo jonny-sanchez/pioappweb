@@ -1,4 +1,5 @@
 export interface Visita {
+  id_visita: number;
   codigo_empresa: string;
   codigo_tienda: string;
   tienda_nombre: string;

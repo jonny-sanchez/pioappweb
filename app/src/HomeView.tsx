@@ -20,7 +20,7 @@ export function HomeView({ onNavigate }: HomeViewProps) {
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
-          {idRol === "7" && (
+          {(idRol === "7" || idRol === "9") && (
           <button
             onClick={() => onNavigate("visitas")}
             className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
@@ -36,7 +36,7 @@ export function HomeView({ onNavigate }: HomeViewProps) {
             </div>
           </button>
           )}
-          {idRol === "7" && (
+          {(idRol === "7" || idRol === "9") && (
             <button
               onClick={() => onNavigate("emergencias")}
               className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
@@ -54,7 +54,7 @@ export function HomeView({ onNavigate }: HomeViewProps) {
               </div>
             </button>
           )}
-          {(idRol === "8" || idRol === "7") && (
+          {(
             <button
               onClick={() => onNavigate("casos")}
               className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"

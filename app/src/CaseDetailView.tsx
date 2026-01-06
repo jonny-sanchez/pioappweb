@@ -22,7 +22,7 @@ import { Label } from "@radix-ui/react-label";
 import { Combobox } from "./ui/combobox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
 import { Button } from "./ui/button";
-
+import { useAuth } from "./api/context/AuthContext";
 
 interface CaseDetailProps {
   caso: VwDetalleCaso;
@@ -51,6 +51,9 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [showError, setShowError] = useState(false);
+    const { user } = useAuth();
+    const idRol = user?.rol != null ? String(user.rol) : null;
+    const canEdit = idRol === "8";
 
     const fetchCases = async () => {
             try {
@@ -276,8 +279,8 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                 }`}
               >
                 <div className="text-center mb-8">
-                  <h2 className="text-gray-900 mb-2">Actualiza un caso</h2>
-                  <p className="text-gray-600">Actualiza la información del caso para el área administrativa y operativa</p>
+                  <h2 className="text-gray-900 mb-2">Detalles del caso</h2>
+                  <p className="text-gray-600">Visualiza la información del caso para el área administrativa y operativa</p>
                 </div>
                 <div className="space-y-6">
                   <div>
@@ -294,6 +297,7 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                           lng: store.altitud
                         }))}
                         value={selectedStore ? selectedStore.id_tienda.toString() : ""}
+                        disabled={!canEdit}
                         onChange={(id) => {
                           const store = stores.find((s) => s.id_tienda.toString() === id);
                           if (store) {
@@ -325,20 +329,24 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                     ) : error ? (
                       <p className="text-red-500">{error}</p>
                     ) : (
-                        <Select value={selectedTipoSolicitud} onValueChange={setSelectedTipoSolicitud}>
-                        <SelectTrigger id="tipo_solicitud" className="bg-gray-50 border-gray-300 text-gray-900">
-                          <SelectValue placeholder="Seleccionar Tipo de Solicitud" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {tiposSolicitud.map((im) => (
-                            <SelectItem 
-                            key={im.id_tipo_solicitud}
-                            value={im.id_tipo_solicitud.toString()}
-                            className="cursor-pointer">
-                              {im.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+                        <Select
+                        value={selectedTipoSolicitud}
+                        onValueChange={setSelectedTipoSolicitud}
+                        disabled={!canEdit}
+                        >
+                          <SelectTrigger id="tipo_solicitud" className="bg-gray-50 border-gray-300 text-gray-900">
+                            <SelectValue placeholder="Seleccionar Tipo de Solicitud" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {tiposSolicitud.map((im) => (
+                              <SelectItem 
+                              key={im.id_tipo_solicitud}
+                              value={im.id_tipo_solicitud.toString()}
+                              className="cursor-pointer">
+                                {im.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
                       </Select>
                     )}
                   </div>
@@ -349,7 +357,11 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                     ) : error ? (
                       <p className="text-red-500">{error}</p>
                     ) : (
-                      <Select value={selectedImpacto} onValueChange={setSelectedImpacto}>
+                      <Select
+                      value={selectedImpacto}
+                      onValueChange={setSelectedImpacto}
+                      disabled={!canEdit}
+                      >
                         <SelectTrigger id="impacto" className="bg-gray-50 border-gray-300 text-gray-900">
                           <SelectValue placeholder="Seleccionar Impacto" />
                         </SelectTrigger>
@@ -373,7 +385,11 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                     ) : error ? (
                       <p className="text-red-500">{error}</p>
                     ) : (
-                      <Select value={selectedUrgencia} onValueChange={setSelectedUrgencia}>
+                      <Select
+                      value={selectedUrgencia}
+                      onValueChange={setSelectedUrgencia}
+                      disabled={!canEdit}
+                      >
                         <SelectTrigger id="urgencia" className="bg-gray-50 border-gray-300 text-gray-900">
                           <SelectValue placeholder="Seleccionar Urgencia" />
                         </SelectTrigger>
@@ -397,7 +413,11 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                     ) : error ? (
                       <p className="text-red-500">{error}</p>
                     ) : (
-                      <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                      <Select
+                      value={selectedCategoria}
+                      onValueChange={setSelectedCategoria}
+                      disabled={!canEdit}
+                      >
                         <SelectTrigger id="categoria" className="bg-gray-50 border-gray-300 text-gray-900">
                           <SelectValue placeholder="Seleccionar Categoria" />
                         </SelectTrigger>
@@ -421,7 +441,11 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                     ) : error ? (
                       <p className="text-red-500">{error}</p>
                     ) : (
-                      <Select value={selectedSubcategoria} onValueChange={setSelectedSubcategoria}>
+                      <Select
+                      value={selectedSubcategoria}
+                      onValueChange={setSelectedSubcategoria}
+                      disabled={!canEdit}
+                      >
                         <SelectTrigger id="subcategoria" className="bg-gray-50 border-gray-300 text-gray-900">
                           <SelectValue placeholder="Seleccionar Subcategoria" />
                         </SelectTrigger>
@@ -448,8 +472,10 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                       placeholder="Describe el objetivo de la visita..."
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fcb900] focus:border-transparent resize-none text-gray-900"
                       rows={3}
+                      disabled={!canEdit}
                     />
                   </div>
+                  {canEdit && (
                   <Button
                     onClick={updateSelectedCaso}
                     className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] w-full mt-2"
@@ -457,6 +483,7 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
                   >
                     Actualizar Caso
                   </Button>
+                  )}
                 </div>
               </div>
               

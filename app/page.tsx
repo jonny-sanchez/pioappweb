@@ -13,6 +13,7 @@ import { VwDetalleCaso } from "./src/types/Caso";
 import { CaseView } from "./src/CaseView";
 import { CasesView } from "./src/CasesView";
 import { CaseDetail } from "./src/CaseDetailView";
+import { FinalCaseDetail } from "./src/FinalCaseView";
 import { useAuth } from "./src/api/context/AuthContext";
 
 type View =
@@ -23,7 +24,8 @@ type View =
   | "emergencia-detalle"
   | "caso"
   | "casos"
-  | "caso-detalle";
+  | "caso-detalle"
+  | "caso-cierre";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("home");
@@ -144,6 +146,12 @@ export default function App() {
             )}
             {currentView === "caso-detalle" && (
               <CaseDetail
+                caso={selectedCase!}
+                onBack={handleBack}
+              />
+            )}
+            {currentView === "caso-cierre" && (
+              <FinalCaseDetail
                 caso={selectedCase!}
                 onBack={handleBack}
               />

@@ -143,3 +143,19 @@ export async function updateCaso(id_caso: string, payload: any) {
 
   return response.json();
 }
+
+export async function cierreReaperturaCaso(id_caso: string, id_estado: string, comments: string) {
+  const response = await authFetch(`/casos/cierreReaperturaCaso/${id_caso}/${id_estado}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      motivo: comments
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || "Error al actualizar caso");
+  }
+  return response.json();
+}

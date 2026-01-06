@@ -8,76 +8,81 @@ import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "./types/VisitaEmerg
 import { useAuth } from "./api/context/AuthContext";
 
 interface CasesViewProps {
-    onNavigate: (view: "casos" | "caso-detalle" | "agregar" | "emergencia-detalle") => void;
+    onNavigate: (view: "casos" | "caso-detalle" | "caso-cierre" | "agregar" | "emergencia-detalle") => void;
     onSelectCaso: (caso: VwDetalleCaso) => void;
     onSelectEmergencyVisit: (visit: VwDetalleVisitaEmergencia) => void;
 }
 
 export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } : CasesViewProps) {
-    const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado">("all");
-    const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
-    const [division, setDivision] = useState<1 | 2>(1);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [casos, setCasos] = useState<VwDetalleCaso[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const { user } = useAuth();
-    const idRol = user?.rol != null ? String(user.rol) : null;
+  const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado" | "Cerrado">("all");
+  const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
+  const [division, setDivision] = useState<1 | 2>(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [casos, setCasos] = useState<VwDetalleCaso[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { user } = useAuth();
+  const idRol = user?.rol != null ? String(user.rol) : null;
 
-    const fetchCasos = async () => {
-        try {
-            const data = await getCasosByDivision(division);
-            setCasos(data);
-        } catch (err) {
-            setError((err as Error).message);
-        } finally {
-            setLoading(false);
-        }
+  const fetchCasos = async () => {
+    try {
+      const data = await getCasosByDivision(division);
+      setCasos(data);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
     }
-
-    useEffect(() => {
-        let isMounted = true;
-
-        fetchCasos();
-
-        const intervalId = setInterval(fetchCasos, 5000);
-
-        return () => {
-            isMounted = false;
-            clearInterval(intervalId);
-        };
-    }, [division]);
-
-    const filteredCasos = casos.filter(caso => {
-        const matchesStatus = estado === "all" || caso.estado === estado;
-    
-        const matchesSearch = searchQuery === "" || 
-            caso.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            caso.impacto.toString().includes(searchQuery.toLowerCase()) ||
-            caso.urgencia.toLowerCase().includes(searchQuery.toLowerCase());
-    
-        return matchesStatus && matchesSearch;
-    });
-
-    const handleSelectCaso = async (caso: VwDetalleCaso) => {
-  try {
-    setLoading(true);
-
-    const visita = await getVisitasEmergenciaByCaso(caso.id_caso);
-    if (visita) {
-      onSelectEmergencyVisit(visita);
-    } else {
-      onSelectCaso(caso);
-      onNavigate(idRol === "7" ? "agregar" : "caso-detalle");
-    }
-
-  } catch (error: any) {
-    onSelectCaso(caso);
-    onNavigate("agregar");
-  } finally {
-    setLoading(false);
   }
-};
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchCasos();
+
+    const intervalId = setInterval(fetchCasos, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [division]);
+
+  const filteredCasos = casos.filter(caso => {
+    const matchesStatus = estado === "all" || caso.estado === estado;
+  
+    const matchesSearch = searchQuery === "" || 
+      caso.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      caso.impacto.toString().includes(searchQuery.toLowerCase()) ||
+      caso.urgencia.toLowerCase().includes(searchQuery.toLowerCase());
+  
+    return matchesStatus && matchesSearch;
+  });
+
+  const handleSelectCaso = async (caso: VwDetalleCaso) => {
+    try {
+      setLoading(true);
+
+      const visita = await getVisitasEmergenciaByCaso(caso.id_caso);
+      if (visita) {
+        onSelectEmergencyVisit(visita);
+        
+        if(caso.estado === "Finalizado" && idRol === "8") {
+          onSelectCaso(caso)
+          onNavigate("caso-cierre")
+        }
+      } else {
+        onSelectCaso(caso);
+        onNavigate(idRol === "7" ? "agregar" : "caso-detalle");
+      }
+
+    } catch (error: any) {
+      onSelectCaso(caso);
+      onNavigate("agregar");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -87,25 +92,17 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
         return "bg-yellow-50 text-yellow-700 border-yellow-200";
       case "Finalizado":
         return "bg-green-50 text-green-700 border-green-200";
+      case "Cerrado":
+        return "bg-gray-50 text-gray-700 border-gray-200";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "Creado":
-        return "Creado";
-      case "Confirmada":
-        return "Confirmada";
-      default:
-        return status;
     }
   };
 
   const pendingCount = casos.filter(c => c.estado === "Creado").length;
   const inProcessCount = casos.filter(c => c.estado === "En Proceso").length;
   const finishedCount = casos.filter(c => c.estado === "Finalizado").length;
+  const closedCount = casos.filter(c => c.estado === "Cerrado").length;
 
   return (
     <div className="max-w-6xl mx-auto p-10">
@@ -119,7 +116,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
             <p className="text-gray-600">Gestiona los casos creados y en proceso</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-6">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <p className="text-gray-600 text-sm mb-1">Total de Casos</p>
             <p className="text-gray-900 text-2xl">{casos.length}</p>
@@ -135,6 +132,10 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
           <div className="bg-green-50 rounded-xl p-4 border border-green-200">
             <p className="text-green-600 text-sm mb-1">Finalizados</p>
             <p className="text-green-700 text-2xl">{finishedCount}</p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <p className="text-gray-600 text-sm mb-1">Cerrados</p>
+            <p className="text-gray-700 text-2xl">{closedCount}</p>
           </div>
         </div>
       </div>
@@ -203,6 +204,16 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
             }`}
           >
             Finalizados ({finishedCount})
+          </button>
+          <button
+            onClick={() => setEstado("Cerrado")}
+            className={`px-5 py-2 rounded-lg transition-all ${
+              estado === "Cerrado"
+                ? "bg-gray-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Cerrados ({closedCount})
           </button>
         </div>
       </div>
