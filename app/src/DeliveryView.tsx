@@ -369,7 +369,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                     <Label htmlFor="comments" className="text-gray-900 mb-2 block">Comentarios</Label>
                     <textarea
                       id="comments"
-                      value={comments}
+                      value={caso?.mensaje}
                       onChange={(e) => setComments(e.target.value)}
                       placeholder="Describe el objetivo de la visita..."
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fcb900] focus:border-transparent resize-none text-gray-900"
