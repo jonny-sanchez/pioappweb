@@ -10,7 +10,7 @@ interface EmergencyVisitsViewProps {
 }
 
 export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVisitsViewProps) {
-  const [filter, setFilter] = useState<"all" | "Asignada" | "En Proceso" | "Finalizada" | "Atrasada">("all");
+  const [filter, setFilter] = useState<"all" | "Asignada" | "En Proceso" | "Finalizada" | "Atrasada">("Asignada");
   const [searchQuery, setSearchQuery] = useState("");
   const [visitas, setVisitas] = useState<VwDetalleVisitaEmergencia[]>([]);
   const [error, setError] = useState<string | null>(null);

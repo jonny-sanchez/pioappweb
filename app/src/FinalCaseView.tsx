@@ -263,6 +263,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                       height={300}
                       alt="Imagen Pinulito"
                       className="object-contain"
+                      unoptimized
                       />
                   </div>
                 </div>

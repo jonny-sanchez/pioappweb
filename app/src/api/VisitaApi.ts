@@ -1,6 +1,6 @@
 import { TipoVisita } from "../types/TipoVisita";
 import { Visita, Vw_visita_pioapp } from "../types/Visita";
-import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "../types/VisitaEmergencia";
+import { VisitaEmergencia, VwDetalleVisitaEmergencia, CasoVisitaReabierta } from "../types/VisitaEmergencia";
 import { authFetch } from "../utils/auth-fetch";
 
 
@@ -125,5 +125,14 @@ export async function getVisitaByVisitaEmergencia(id_ve: number): Promise<Visita
     throw new Error("Error al obtener visita");
   }
 
+  return response.json();
+}
+
+export async function getVisitasReabiertas(id_v: number, id_c: string): Promise<CasoVisitaReabierta[]> {
+  const response = await authFetch(`/visitas/getVisitasReabiertas/${id_v}/${id_c}`);
+
+  if (!response.ok) {
+    throw new Error("Error al obtener visitas reabiertas");
+  }
   return response.json();
 }

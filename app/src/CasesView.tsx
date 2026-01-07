@@ -14,7 +14,7 @@ interface CasesViewProps {
 }
 
 export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } : CasesViewProps) {
-  const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado" | "Cerrado">("all");
+  const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado" | "Cerrado">("Creado");
   const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
   const [division, setDivision] = useState<1 | 2>(1);
   const [searchQuery, setSearchQuery] = useState("");
