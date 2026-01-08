@@ -66,7 +66,6 @@ export async function createVisitaEmergencia(data: VisitaEmergencia) {
     headers: getAuthHeaders(),
     body: JSON.stringify(data)
   });
-
   if (!response.ok) {
     throw new Error("Error al crear visita de emergencia");
   }

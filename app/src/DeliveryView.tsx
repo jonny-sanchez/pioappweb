@@ -71,6 +71,8 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
 
     const sup = await getSupervisorBycodEmpleado(tienda?.codigo_administrador || "0");
     setSelectedPilot(sup);
+
+    setComments(caso.mensaje)
   } catch (err) {
     setError((err as Error).message);
   }
