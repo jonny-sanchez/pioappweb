@@ -10,12 +10,14 @@ import {
   Loader2,
   Flag,
   Camera,
+  Download,
+  X,
   RefreshCcw } from "lucide-react";
 import { MapView } from "./MapView";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "./ui/dialog";
-import { VwDetalleVisitaEmergencia, CasoVisitaReabierta } from "./types/VisitaEmergencia";
+import { VwDetalleVisitaEmergencia, CasoVisitaReabierta, VisitaEmergencia } from "./types/VisitaEmergencia";
 import { Visita } from "./types/Visita";
 import { getVisitasEmergenciaById, getVisitaByVisitaEmergencia, getVisitasReabiertas } from "./api/VisitaApi";
 import Image from "next/image";
@@ -30,10 +32,12 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   const [timeEstimate, setTimeEstimate] = useState<string | null>(null);
   const [visitasReabiertas, setVisitasReabiertas] = useState<CasoVisitaReabierta []>([]);
   const [showReopenModal, setShowReopenModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(
     visit.last_gps_latitude !== null ? Number(visit.last_gps_latitude) : null
   );
   const [visita, setVisita] = useState<Visita | null>(null);
+  const [visitaActualizada, setVisitaActualizada] = useState<VisitaEmergencia | null>(null);
 
   const [lastGpsLng, setLastGpsLng] = useState<number | null>(
     visit.last_gps_longitude !== null
@@ -81,6 +85,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
         }
         if (updatedVisita?.id_estado === 2) {
           setConfirmationStatus("confirmed");
+          setVisitaActualizada(updatedVisita);
         } else if (updatedVisita?.id_estado === 1) {
           setConfirmationStatus("waiting");
         } else if(updatedVisita?.id_estado === 3) {
@@ -156,6 +161,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
     }
   };
 
+
   return (
     <div className="max-w-7xl mx-auto py-10">
       <div className="mb-2">
@@ -206,28 +212,29 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               </div>
-              {visit.estado === "Finalizada" && visita && (
                 <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
                   <div className="flex items-start gap-3">
                     <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
-                      <p className="text-yellow-900">{formatDateTime(visita.createdAt)}</p>
-                    </div>
+                      {visit.estado === "Finalizada" && visita && (
+                        <div>
+                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
+                          <p className="text-yellow-900">{formatDateTime(visita.createdAt)}</p>
+                        </div>
+                      )}
+                      {confirmationStatus === "confirmed" && visitaActualizada && (
+                        <div>
+                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Confirmación de Supervisor</p>
+                          <p className="text-yellow-900">{formatDateTime(visitaActualizada.updatedAt)}</p>
+                        </div>
+                      )}
+                      {confirmationStatus !== "finished" && confirmationStatus !== "confirmed" && !visita && (
+                        <div>
+                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Asignación</p>
+                          <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
+                        </div>
+                      )}
                   </div>
                 </div>
-              )}
-              {confirmationStatus !== "finished" && !visita && (
-                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
-                      <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <div className="flex items-start gap-3">
                   <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -274,17 +281,16 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
               {visit.estado === "Finalizada" && visita && (
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                       <div className="flex items-start gap-3">
-                        <Camera className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-blue-600 text-sm mb-1">Imagen</p>
-                          <Image
-                            src={visita.url_image}
-                            width={200}
-                            height={300}
-                            alt="Logo Pinulito"
-                            className="object-contain"
-                            unoptimized
-                            />
+                          <button 
+                            onClick={() => setShowImageModal(true)}
+                            className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                            title="Click para ver en grande"
+                          >
+                            <img src={visita.url_image} alt="Visita de Emergencia" />
+                          </button>
                         </div>
                       </div>
                   </div>
@@ -428,6 +434,34 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                 Cerrar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="sm:max-w-4xl p-0 bg-black border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Evidencia Fotográfica</DialogTitle>
+            <DialogDescription>
+              Imagen ampliada de la evidencia fotográfica de la visita {visit.id_visita}
+            </DialogDescription>
+          </DialogHeader>
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            aria-label="Cerrar imagen"
+          >
+          </button>
+          <div className="flex items-center justify-center p-4 sm:p-6 min-h-[300px]">
+            <img
+              src={visita?.url_image}
+              alt="Visita de Emergencia"
+              className="
+                max-w-full
+                max-h-[80vh]
+                object-contain
+                rounded-lg
+              "
+            />
           </div>
         </DialogContent>
       </Dialog>

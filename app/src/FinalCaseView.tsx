@@ -40,6 +40,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
   const [comments, setComments] = useState("");
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(
     visitaEmergencia?.last_gps_latitude !== null ? Number(visitaEmergencia?.last_gps_latitude) : null
   );
@@ -253,21 +254,20 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                 </div>
               </div>
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div className="flex items-start gap-3">
-                  <Camera className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div>
-                    <p className="text-blue-600 text-sm mb-1">Imagen</p>
-                    <Image
-                      src={visita?.url_image || logo}
-                      width={200}
-                      height={300}
-                      alt="Imagen Pinulito"
-                      className="object-contain"
-                      unoptimized
-                      />
+                      <div className="flex items-start gap-3">
+                        <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-blue-600 text-sm mb-1">Imagen</p>
+                          <button 
+                            onClick={() => setShowImageModal(true)}
+                            className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                            title="Click para ver en grande"
+                          >
+                            <img src={visita?.url_image} alt="Visita de Emergencia" />
+                          </button>
+                        </div>
+                      </div>
                   </div>
-                </div>
-              </div>
               <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">
                 <div className="flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-gray-600 mr-2" />
@@ -419,6 +419,34 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                 </Button>
               </div>
             </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="sm:max-w-4xl p-0 bg-black border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Evidencia Fotográfica</DialogTitle>
+            <DialogDescription>
+              Imagen ampliada de la evidencia fotográfica de la visita {visita?.id_visita}
+            </DialogDescription>
+          </DialogHeader>
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            aria-label="Cerrar imagen"
+          >
+          </button>
+          <div className="flex items-center justify-center p-4 sm:p-6 min-h-[300px]">
+            <img
+              src={visita?.url_image}
+              alt="Visita de Emergencia"
+              className="
+                max-w-full
+                max-h-[80vh]
+                object-contain
+                rounded-lg
+              "
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

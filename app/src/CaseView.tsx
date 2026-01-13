@@ -48,6 +48,7 @@ export function CaseView() {
     const [errorMessage, setErrorMessage] = useState("");
     const [showError, setShowError] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [canCreate, setCanCreate] = useState(true);
 
     //OBTENER TIENDAS
     const fetchStores = async () => {
@@ -173,9 +174,11 @@ export function CaseView() {
         setSelectedCategoria("");
         setSelectedSubcategoria("");
         setComments("");
+        setCanCreate(true)
     };
 
     const createNewCaso = async () => {
+      setCanCreate(false);
         const fecha = new Date();
         if(selectedStore && selectedTipoSolicitud && selectedImpacto && selectedUrgencia && selectedCategoria && selectedSubcategoria) {
             const caso = await createCaso({
@@ -415,7 +418,7 @@ export function CaseView() {
                   <Button
                     onClick={createNewCaso}
                     className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] w-full mt-2"
-                    disabled={!selectedStore || !selectedTipoSolicitud || !selectedImpacto || !selectedUrgencia || !selectedCategoria || !selectedSubcategoria}
+                    disabled={!canCreate || !selectedStore || !selectedTipoSolicitud || !selectedImpacto || !selectedUrgencia || !selectedCategoria || !selectedSubcategoria}
                   >
                     Agregar Caso
                   </Button>

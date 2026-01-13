@@ -26,9 +26,10 @@ interface HeaderProps {
 const date = new Date().toLocaleDateString("es-ES");
 
 export function Header({ onMenuToggle}: HeaderProps) {
-    const { user } = useAuth();
-    const nombre = user?.nombre != null ? String(user.nombre) : null;
-    const puesto = user?.puesto != null ? String(user.puesto) : null;
+  const { user } = useAuth();
+  const nombre = localStorage.getItem("nombre");
+  const puesto = localStorage.getItem("puesto");
+    
   useEffect(() => {
     const date = new Date().toLocaleDateString("es-ES");
   })

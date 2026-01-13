@@ -14,6 +14,15 @@ export async function login(cod_empleado: string, password: string) {
 
   const data = await response.json();
   localStorage.setItem("token", data.token);
+  localStorage.setItem("rol", data.user.rol);
+  localStorage.setItem("nombre", data.user.nombre);
+  localStorage.setItem("puesto", data.user.puesto);
+  if(data.user.email === null ) {
+    localStorage.setItem("email", "0");
+  } else {
+    localStorage.setItem("email", "1");
+  }
+  localStorage.setItem("division", data.user.division);
 
   return data;
 }

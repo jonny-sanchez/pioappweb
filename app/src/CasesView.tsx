@@ -16,18 +16,29 @@ interface CasesViewProps {
 export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } : CasesViewProps) {
   const [estado, setEstado] = useState<"all" | "Creado" | "En Proceso" | "Finalizado" | "Cerrado">("Creado");
   const [visita, setVisita] = useState<VisitaEmergencia | null>(null);
-  const [division, setDivision] = useState<1 | 2>(1);
+  const [selectedDivision, setSelectedDivision] = useState<string | null>(localStorage.getItem("division"));
+  const [canChancheDiv, setCanChangeDiv] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [casos, setCasos] = useState<VwDetalleCaso[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { user } = useAuth();
-  const idRol = user?.rol != null ? String(user.rol) : null;
+  const idRol = localStorage.getItem("rol");
+
+  useEffect(() => {
+    if(selectedDivision === "null") {
+      setSelectedDivision("1");
+      setCanChangeDiv(true);
+    } else {
+      setSelectedDivision(selectedDivision);
+    }
+  }, [selectedDivision])
 
   const fetchCasos = async () => {
     try {
-      const data = await getCasosByDivision(division);
-      setCasos(data);
+      if(selectedDivision !== "null") {
+        const data = await getCasosByDivision(Number(selectedDivision));
+        setCasos(data);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -46,7 +57,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [division]);
+  }, [selectedDivision]);
 
   const filteredCasos = casos.filter(caso => {
     const matchesStatus = estado === "all" || caso.estado === estado;
@@ -54,7 +65,8 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
     const matchesSearch = searchQuery === "" || 
       caso.tienda_nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
       caso.impacto.toString().includes(searchQuery.toLowerCase()) ||
-      caso.urgencia.toLowerCase().includes(searchQuery.toLowerCase());
+      caso.urgencia.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      caso.correlativo.toString().includes(searchQuery.toLowerCase());
   
     return matchesStatus && matchesSearch;
   });
@@ -139,12 +151,13 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
           </div>
         </div>
       </div>
+      {canChancheDiv && (
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => setDivision(1)}
+            onClick={() => setSelectedDivision("1")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              division === 1
+              selectedDivision === "1"
                 ? "bg-yellow-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
@@ -152,9 +165,9 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
             División 1
           </button>
           <button
-            onClick={() => setDivision(2)}
+            onClick={() => setSelectedDivision("2")}
             className={`px-5 py-2 rounded-lg transition-all ${
-              division === 2
+              selectedDivision === "2"
                 ? "bg-yellow-500 text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
@@ -163,6 +176,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
           </button>
         </div>
       </div>
+      )}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
         <div className="flex flex-wrap gap-3">
           <button
@@ -222,7 +236,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 w-5 h-5" />
           <Input
             type="text"
-            placeholder="Buscar por supervisor, ID o tienda..."
+            placeholder="Buscar por tienda, urgencia, impacto o numero de caso..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-12 border-gray-300 focus:border-[#fcb900] focus:ring-[#fcb900] text-gray-900"

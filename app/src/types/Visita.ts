@@ -11,6 +11,7 @@ export interface Visita {
   gps_latitud_visita: number;
   comentario: string;
   createdAt: string;
+  updatedAt: string;
   url_image: string
 }
 

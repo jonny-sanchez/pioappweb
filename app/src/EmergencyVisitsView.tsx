@@ -15,7 +15,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
   const [visitas, setVisitas] = useState<VwDetalleVisitaEmergencia[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [division, setDivision] = useState<1 | 2>(1);
+  const division = localStorage.getItem("division");
 
   const validaFechas = (date: Date) => {
     const d = new Date(date);
@@ -31,7 +31,7 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
   useEffect(() => {
     const fetchEmergencyVisits = async () => {
             try {
-              const data = await getVisitasEmergencia(division);
+              const data = await getVisitasEmergencia(Number(division));
               setVisitas(data);
             } catch (err) {
               setError((err as Error).message);
@@ -155,28 +155,6 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
         </div>
       </div>
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setDivision(1)}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              division === 1
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            División 1
-          </button>
-          <button
-            onClick={() => setDivision(2)}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              division === 2
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            División 2
-          </button>
-        </div>
       </div>
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
         <div className="flex flex-wrap gap-3">

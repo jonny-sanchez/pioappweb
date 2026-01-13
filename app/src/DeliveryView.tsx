@@ -56,6 +56,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(null);
   const [lastGpsLng, setLastGpsLng] = useState<number | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [canCreate, setCanCreate] = useState(true);
 
   const scheduleDays = [
     { id: "1", name: "Hoy" },
@@ -142,6 +143,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
     setSelectedTipoVisita("");
     setConfirmationStatus(null);
     setComments("");
+    setCanCreate(true);
   };
 
   const getTipoVisitaName = () => {
@@ -180,6 +182,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   };
 
   const createVisita = async () => {
+    setCanCreate(false);
     const fecha = new Date();
     if(selectedScheduleDay === "2") {
       fecha.setDate(fecha.getDate() + 1);
@@ -380,7 +383,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                   <Button
                     onClick={createVisita}
                     className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] w-full mt-2"
-                    disabled={!selectedPilot || !selectedStore || !selectedTipoVisita || (selectedScheduleDay === "1" && !routeLoaded)}
+                    disabled={!canCreate || !selectedPilot || !selectedStore || !selectedTipoVisita || (selectedScheduleDay === "1" && !routeLoaded)}
                   >
                     Agregar Visita
                   </Button>
