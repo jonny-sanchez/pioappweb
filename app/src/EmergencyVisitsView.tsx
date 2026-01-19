@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, MapPin, User, ChevronRight, Calendar, Search } from "lucide-react";
+import { AlertCircle, MapPin, User, ChevronRight, Calendar, Search, FileDown } from "lucide-react";
 import { Input } from "./ui/input";
 import { getVisitasEmergencia } from "./api/VisitaApi";
 import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
+import { exportVisitasEmergenciaExcel } from "./services/ExportEmergencyExcel";
+import { Button } from "./ui/button";
 
 interface EmergencyVisitsViewProps {
   onNavigate: (view: "emergencias" | "emergencia-detalle") => void;
@@ -99,16 +101,25 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "Asignada":
-        return "Asignada";
-      case "Confirmada":
-        return "Confirmada";
-      default:
-        return status;
-    }
+  const handleExportExcel = async () => {
+    const logoBase64 = await fetch("/LOGOPINULITOORIGINAL.png")
+      .then((res) => res.blob())
+      .then((blob) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      });
+
+    exportVisitasEmergenciaExcel(
+      filteredVisits,
+      division ?? "N/A",
+      filter,
+      logoBase64 // el mismo base64 que usas en Casos
+    );
   };
+
 
   const pendingCount = visitas.filter(v => v.estado === "Asignada").length;
   const inProgressCount = visitas.filter(v => v.estado === "En Proceso").length;
@@ -157,57 +168,67 @@ export function EmergencyVisitsView({ onNavigate, onSelectVisit } : EmergencyVis
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
       </div>
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "all"
-                ? "bg-[#fcb900] text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                filter === "all"
+                  ? "bg-[#fcb900] text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Todas ({visitas.length})
+            </button>
+            <button
+              onClick={() => setFilter("Asignada")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                filter === "Asignada"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Asignadas ({pendingCount})
+            </button>
+            <button
+              onClick={() => setFilter("En Proceso")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                filter === "En Proceso"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              En Proceso ({inProgressCount})
+            </button>
+            <button
+              onClick={() => setFilter("Finalizada")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                filter === "Finalizada"
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Finalizadas ({finishedCount})
+            </button>
+            <button
+              onClick={() => setFilter("Atrasada")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                filter === "Atrasada"
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Atrasadas ({overdueCount})
+            </button>
+          </div>
+          <Button
+            onClick={handleExportExcel}
+            className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] whitespace-nowrap"
+            disabled={filteredVisits.length === 0}
           >
-            Todas ({visitas.length})
-          </button>
-          <button
-            onClick={() => setFilter("Asignada")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "Asignada"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Asignadas ({pendingCount})
-          </button>
-          <button
-            onClick={() => setFilter("En Proceso")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "En Proceso"
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            En Proceso ({inProgressCount})
-          </button>
-          <button
-            onClick={() => setFilter("Finalizada")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "Finalizada"
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Finalizadas ({finishedCount})
-          </button>
-          <button
-            onClick={() => setFilter("Atrasada")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              filter === "Atrasada"
-                ? "bg-red-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Atrasadas ({overdueCount})
-          </button>
+            <FileDown className="mr-2 h-4 w-4" />
+            Exportar a Excel
+          </Button>
         </div>
       </div>
       <div className="bg-white rounded-2xl shadow-xl border border-gray-00 p-4 mb-6">

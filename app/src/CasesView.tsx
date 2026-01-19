@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen } from "lucide-react";
+import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen, FileDown } from "lucide-react";
 import { Input } from "./ui/input";
 import { getCasosByDivision } from "./api/CasoApi";
 import { getVisitasEmergenciaByCaso } from "./api/VisitaApi";
 import { VwDetalleCaso } from "./types/Caso";
 import { VisitaEmergencia, VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
 import { useAuth } from "./api/context/AuthContext";
+import { exportCasosExcel } from "../src/services/ExportCasosExcel";
+import { Button } from "./ui/button";
 
 interface CasesViewProps {
     onNavigate: (view: "casos" | "caso-detalle" | "caso-cierre" | "agregar" | "emergencia-detalle") => void;
@@ -96,6 +98,35 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
     }
   };
 
+  const handleExportExcel = async () => {
+    const logoBase64 = await fetch("/LOGOPINULITOORIGINAL.png")
+      .then((res) => res.blob())
+      .then((blob) => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      });
+
+    exportCasosExcel(
+      filteredCasos.map(c => ({
+        correlativo: c.correlativo,
+        estado: c.estado,
+        urgencia: c.urgencia,
+        impacto: c.impacto,
+        tienda_nombre: c.tienda_nombre,
+        tipo_solicitud: c.tipo_solicitud,
+        categoria: c.categoria,
+        subcategoria: c.subcategoria,
+        mensaje: c.mensaje
+      })),
+      selectedDivision ?? "N/A",
+      estado,
+      logoBase64
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Creado":
@@ -178,57 +209,67 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
       </div>
       )}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setEstado("all")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "all"
-                ? "bg-gray-400 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">  
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setEstado("all")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                estado === "all"
+                  ? "bg-gray-400 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Todos ({casos.length})
+            </button>
+            <button
+              onClick={() => setEstado("Creado")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                estado === "Creado"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Creados ({pendingCount})
+            </button>
+            <button
+              onClick={() => setEstado("En Proceso")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                estado === "En Proceso"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              En Proceso ({inProcessCount})
+            </button>
+            <button
+              onClick={() => setEstado("Finalizado")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                estado === "Finalizado"
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Finalizados ({finishedCount})
+            </button>
+            <button
+              onClick={() => setEstado("Cerrado")}
+              className={`px-5 py-2 rounded-lg transition-all ${
+                estado === "Cerrado"
+                  ? "bg-gray-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Cerrados ({closedCount})
+            </button>
+          </div>
+          <Button
+            onClick={handleExportExcel}
+            className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] whitespace-nowrap"
+            disabled={filteredCasos.length === 0}
           >
-            Todos ({casos.length})
-          </button>
-          <button
-            onClick={() => setEstado("Creado")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "Creado"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Creados ({pendingCount})
-          </button>
-          <button
-            onClick={() => setEstado("En Proceso")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "En Proceso"
-                ? "bg-yellow-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            En Proceso ({inProcessCount})
-          </button>
-          <button
-            onClick={() => setEstado("Finalizado")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "Finalizado"
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Finalizados ({finishedCount})
-          </button>
-          <button
-            onClick={() => setEstado("Cerrado")}
-            className={`px-5 py-2 rounded-lg transition-all ${
-              estado === "Cerrado"
-                ? "bg-gray-500 text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
-          >
-            Cerrados ({closedCount})
-          </button>
+            <FileDown className="mr-2 h-4 w-4" />
+            Exportar a Excel
+          </Button>
         </div>
       </div>
       <div className="bg-white rounded-2xl shadow-xl border border-gray-00 p-4 mb-6">
