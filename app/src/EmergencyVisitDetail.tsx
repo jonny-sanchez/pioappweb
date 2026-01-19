@@ -77,8 +77,12 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
     const visitaId = visit.id_visita.toString();
     const interval = setInterval(async () => {
       try {
+        
         const updatedVisita = await getVisitasEmergenciaById(visitaId);
         if (!updatedVisita) return;
+        const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
+        setVisita(visit)
+        console.log(visit);
         if (updatedVisita.last_gps_latitude && updatedVisita.last_gps_longitude) {
           setLastGpsLat(Number(updatedVisita.last_gps_latitude));
           setLastGpsLng(Number(updatedVisita.last_gps_longitude));
@@ -90,8 +94,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
           setConfirmationStatus("waiting");
         } else if(updatedVisita?.id_estado === 3) {
           setConfirmationStatus("finished");
-          const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
-          setVisita(visit)
           clearInterval(interval);
         }
       } catch (err) {
@@ -233,6 +235,12 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                           <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
                         </div>
                       )}
+                      {confirmationStatus !== "finished" && confirmationStatus !== "confirmed" && visita && (
+                        <div>
+                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Reapertura</p>
+                          <p className="text-yellow-900">{formatDateTime(ultimaReapertura?.fecha_reapertura)}</p>
+                        </div>
+                      )}
                   </div>
                 </div>
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
@@ -267,7 +275,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               )}
-              {confirmationStatus === "finished" && visita && (
+              {confirmationStatus === "finished" || visita && (
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                     <div className="flex items-start gap-3">
                       <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -278,7 +286,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                     </div>
                 </div>
               )}
-              {visit.estado === "Finalizada" && visita && (
+              {visit.estado === "Finalizada" || visita && (
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                       <div className="flex items-start gap-3">
                         <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
