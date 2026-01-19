@@ -283,7 +283,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
           <div className={`w-full transition-all duration-700 ease-in-out ${showMap ? 'max-w-none' : 'max-w-[500px]'}`}>
             <div className="relative">
               <div
-                className={`absolute top-0 left-0 w-full bg-white rounded-2xl  border border-gray-200 pr-8 pl-8 pb-8 pt-2 transition-all duration-700 ease-in-out ${
+                className={`top-0 left-0 w-full bg-white rounded-2xl  border border-gray-200 pr-8 pl-8 pb-8 pt-2 transition-all duration-700 ease-in-out ${
                   showSuccess || showError ? "-translate-x-[500px] opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
                 }`}
               >
