@@ -32,4 +32,6 @@ export interface VwDetalleCaso {
   subcategoria: string;
   mensaje: string;
   correlativo: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

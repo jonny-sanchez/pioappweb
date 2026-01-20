@@ -47,6 +47,7 @@ export async function exportCasosExcel(
         "Tipo Solicitud",
         "Categoría",
         "Subcategoría",
+        "Fecha de Creación",
         "Mensaje",
     ];
 
@@ -71,6 +72,7 @@ export async function exportCasosExcel(
         { key: "tipo_solicitud", width: 25 },
         { key: "categoria", width: 20 },
         { key: "subcategoria", width: 25 },
+        { key: "createdAt", width: 25 },
         { key: "mensaje", width: 100 },
     ];
 
@@ -84,6 +86,7 @@ export async function exportCasosExcel(
             c.tipo_solicitud,
             c.categoria,
             c.subcategoria,
+            c.createdAt.toLocaleString(),
             c.mensaje,
         ];
     });

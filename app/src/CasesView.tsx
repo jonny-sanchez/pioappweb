@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen, FileDown } from "lucide-react";
+import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen, FileDown, Calendar } from "lucide-react";
 import { Input } from "./ui/input";
 import { getCasosByDivision } from "./api/CasoApi";
 import { getVisitasEmergenciaByCaso } from "./api/VisitaApi";
@@ -119,6 +119,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
         tipo_solicitud: c.tipo_solicitud,
         categoria: c.categoria,
         subcategoria: c.subcategoria,
+        createdAt: formatDateTime(c.createdAt),
         mensaje: c.mensaje
       })),
       selectedDivision ?? "N/A",
@@ -140,6 +141,27 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
+  };
+
+  const formatDateTime = (value?: string | Date | null) => {
+    if (!value) {
+        return "Fecha no disponible"; 
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (isNaN(date.getTime())) {
+      return "Fecha inválida";
+    }
+
+    return new Intl.DateTimeFormat("es-GT", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
   };
 
   const pendingCount = casos.filter(c => c.estado === "Creado").length;
@@ -352,6 +374,13 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
                       <div>
                         <p className="text-gray-500 text-sm">Subcategoria</p>
                         <p className="text-gray-900 text-sm">{casos.subcategoria}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Calendar className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Fecha Asignada</p>
+                        <p className="text-gray-900 text-sm">{formatDateTime(casos.createdAt)}</p>
                       </div>
                     </div>
                   </div>
