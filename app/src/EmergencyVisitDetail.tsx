@@ -82,7 +82,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
         if (!updatedVisita) return;
         const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
         setVisita(visit)
-        console.log(visit);
         if (updatedVisita.last_gps_latitude && updatedVisita.last_gps_longitude) {
           setLastGpsLat(Number(updatedVisita.last_gps_latitude));
           setLastGpsLng(Number(updatedVisita.last_gps_longitude));
@@ -275,18 +274,18 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               )}
-              {confirmationStatus === "finished" || visita && (
+              {(confirmationStatus === "finished" || visita) && (
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                     <div className="flex items-start gap-3">
                       <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
                         <p className="text-blue-600 text-sm mb-1">Mensaje del supervisor</p>
-                        <p className="text-blue-900">{visita.comentario ?? "Supervisor no asigna comentario a la visita"}</p>
+                        <p className="text-blue-900">{visita?.comentario ?? "Supervisor no asigna comentario a la visita"}</p>
                       </div>
                     </div>
                 </div>
               )}
-              {visit.estado === "Finalizada" || visita && (
+              {(confirmationStatus === "finished" || visita) && (
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                       <div className="flex items-start gap-3">
                         <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -297,7 +296,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                             className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
                             title="Click para ver en grande"
                           >
-                            <img src={visita.url_image} alt="Visita de Emergencia" />
+                            <img src={visita?.url_image} alt="Visita de Emergencia" />
                           </button>
                         </div>
                       </div>
