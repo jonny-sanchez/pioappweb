@@ -6,6 +6,7 @@ import { Subcategoria } from "../types/Subcategoria"
 import { CasoModel } from "../types/Caso";
 import { VwDetalleCaso } from "../types/Caso";
 import { authFetch } from "../utils/auth-fetch";
+import { PermisoEstadoModel } from "../types/PermisoEstado";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -157,5 +158,17 @@ export async function cierreReaperturaCaso(id_caso: string, id_estado: string, c
     const errorData = await response.json();
     throw new Error(errorData.error || "Error al actualizar caso");
   }
+  return response.json();
+}
+
+export async function permisoEstado(): Promise<PermisoEstadoModel> {
+  const response = await authFetch(`/casos/permiso_estado`,
+    {
+      headers: getAuthHeaders()
+    });
+  if (!response.ok) {
+    throw new Error("Error al obtener los permisos de estado");
+  }
+
   return response.json();
 }

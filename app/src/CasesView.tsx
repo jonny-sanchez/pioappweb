@@ -81,7 +81,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
       if (visita) {
         onSelectEmergencyVisit(visita);
         
-        if(caso.estado === "Finalizado" && idRol === "8") {
+        if((caso.estado === "Finalizado" || caso.estado === "Cerrado")  && idRol === "8") {
           onSelectCaso(caso)
           onNavigate("caso-cierre")
         }

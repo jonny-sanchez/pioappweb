@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import { VwDetalleCaso } from "./types/Caso";
 import { CasoModel } from "./types/Caso";
+import { PermisoEstadoModel } from "./types/PermisoEstado";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import Image from "next/image";
-import { cierreReaperturaCaso } from "./api/CasoApi";
+import { cierreReaperturaCaso, permisoEstado } from "./api/CasoApi";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { getVisitasEmergenciaByCaso, getVisitaByVisitaEmergencia } from "./api/VisitaApi";
@@ -32,6 +33,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [visitaEmergencia, setVisitaEmergencia] = useState<VwDetalleVisitaEmergencia | null>(null)
   const [visita, setVisita] = useState<Visita | null>(null);
+  const [permiso, setPermiso] = useState<PermisoEstadoModel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -54,6 +56,9 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
             setVisitaEmergencia(data);
             setLastGpsLat(Number(data?.last_gps_latitude));
             setLastGpsLng(Number(data?.last_gps_longitude));
+
+            const p = await permisoEstado();
+            setPermiso(p);
         } catch (err: any) {
             if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
                 localStorage.clear();
@@ -274,9 +279,11 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                   <p className="text-gray-700">Visita Finalizada</p>
                 </div>
               </div>
+              {permiso && (
               <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
                 <Button
                 onClick={() => handleClose()}
+                disabled={caso.estado === "Cerrado"}
                 className="border border-[#33CCFF] flex-1 bg-[#33CCFF] hover:text-[#33CCFF] text-gray-900 hover:bg-white h-10 sm:h-12 text-sm sm:text-base"
                 >
                   Cerrar Caso
@@ -288,7 +295,8 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                 <CheckCircle className="w-4 h-4 mr-2" />
                   Reabrir Caso
                 </Button>
-              </div>            
+              </div>   
+              )}         
             </div>
               {showError && (
                 <div
