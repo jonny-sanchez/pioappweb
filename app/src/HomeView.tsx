@@ -1,23 +1,31 @@
 
-import { Calendar, CalendarClock, Package, ClipboardList, AlertCircle } from "lucide-react";
+import * as Icons from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "./api/context/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Label } from "@radix-ui/react-label";
 import { updateUser } from "./api/UserApi";
+import { Menu } from "./types/Menu";
+import { getMenuByRol } from "./api/MenuApi";
+import { CasesPermissionsView } from "./CasesPermissionsView";
 
-interface HomeViewProps {
-  onNavigate: (view: "visitas" | "agregar" | "emergencias" | "caso" | "casos") => void;
-}
-
-export function HomeView({ onNavigate }: HomeViewProps) {
+export function HomeView({ onNavigate }: { onNavigate: (v: any) => void; }) {
   const { user } = useAuth();
   const idRol = localStorage.getItem("rol");
   const [actualizaInfo, setActualizaInfo] = useState<Boolean>(true);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string>("");
+  const [menus, setMenus] = useState<Menu[]>([]);
+
+  const viewMap: Record<string, string> = {
+  VisitsView: "visitas",
+  CaseView: "caso",
+  CasesView: "casos",
+  EmergencyVisitsView: "emergencias",
+  CasesPermissionsView: "casos-permisos"
+};
 
   const PUBLIC_EMAIL_DOMAINS = [
     "gmail.com",
@@ -30,12 +38,31 @@ export function HomeView({ onNavigate }: HomeViewProps) {
     "msn.com"
   ];
 
+  function getIcon(name: string) {
+    if (name in Icons) {
+      // @ts-expect-error
+      return Icons[name];
+    }
+    return Icons.Circle;
+  }
+
+
+  const fetchMenus = async () => {
+    try {
+      const data = await getMenuByRol();
+      setMenus(data);
+    } catch (error: any) {
+      alert(error.message)
+    }
+  }
 
   useEffect(() => {
     if (localStorage.getItem("email") === "0") {
       setActualizaInfo(false);
       setShowUpdateModal(true);
     }
+
+    fetchMenus();
   }, []);
 
   const isCorporateEmail = (email: string) => {
@@ -91,72 +118,29 @@ export function HomeView({ onNavigate }: HomeViewProps) {
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
-          {(idRol === "7" || idRol === "9") && (
-          <button
-            onClick={() => onNavigate("visitas")}
-            className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
-                <Calendar className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
-              </div>
-              <h2 className="text-gray-900 mb-2 sm:mb-3">Historial de Visitas</h2>
-              <p className="text-gray-600 text-sm sm:text-base">
-                Consulta y gestiona las visitas de supervisores
-              </p>
-            </div>
-          </button>
-          )}
-          {(idRol === "7" || idRol === "9") && (
-            <button
-              onClick={() => onNavigate("emergencias")}
-              className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
-                  <CalendarClock className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
-                </div>
-                <h2 className="text-gray-900 mb-2 sm:mb-3">
-                  Control de Tareas
-                </h2>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Consulta y gestiona las tareas activas
-                </p>
-              </div>
-            </button>
-          )}
-          {(
-            <button
-              onClick={() => onNavigate("casos")}
-              className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
-                  <ClipboardList className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
-                </div>
-                <h2 className="text-gray-900 mb-2 sm:mb-3">Lista de Casos</h2>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Gestiona y administra todos los casos creados
-                </p>
-              </div>
-            </button>
-          )}
-          {idRol === "8" && (
-            <button
-              onClick={() => onNavigate("caso")}
-              className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#fcb900] to-[#e5a700] rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
-                  <Package className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
-                </div>
-                <h2 className="text-gray-900 mb-2 sm:mb-3">Agregar Caso</h2>
-                <p className="text-gray-600 text-sm sm:text-base">
-                  Crea casos sobre incidencias e inconvenientes operativas
-                </p>
-              </div>
-            </button>
-          )}
+            {menus
+            .filter(m => m.visible)
+            .map(m => {
+              const Icon = getIcon(m.icono);
+              const view = viewMap[m.nombre_menu ?? ""] ?? "home";
+              return (
+                <button
+                  key={m.id_menu}
+                  onClick={() => onNavigate(view)}
+                  className="group bg-white rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl hover:border-[#fcb900] transition-all duration-300 transform hover:-translate-y-1 w-full sm:w-[calc(50%-1rem)]"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#fcb900] to-[#fcb900] rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-gray-900" />
+                    </div>
+                    <h2 className="text-gray-900 mb-2 sm:mb-3">{m.nombre}</h2>
+                    <p className="text-gray-600 text-sm sm:text-base">
+                      {m.descripcion}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
         </div>
       </div>
       {!actualizaInfo && (
@@ -170,7 +154,7 @@ export function HomeView({ onNavigate }: HomeViewProps) {
             <DialogHeader>
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 bg-gradient-to-br bg-[#fcb900] rounded-full flex items-center justify-center">
-                  <AlertCircle className="w-8 h-8 text-white" />
+                  <Icons.AlertCircle className="w-8 h-8 text-white" />
                 </div>
               </div>
               <DialogTitle className="text-center text-gray-900">

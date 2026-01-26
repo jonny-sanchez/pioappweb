@@ -14,6 +14,7 @@ import { CaseView } from "./src/CaseView";
 import { CasesView } from "./src/CasesView";
 import { CaseDetail } from "./src/CaseDetailView";
 import { FinalCaseDetail } from "./src/FinalCaseView";
+import { CasesPermissionsView } from "./src/CasesPermissionsView";
 import { useAuth } from "./src/api/context/AuthContext";
 
 type View =
@@ -25,7 +26,8 @@ type View =
   | "caso"
   | "casos"
   | "caso-detalle"
-  | "caso-cierre";
+  | "caso-cierre"
+  | "casos-permisos";
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("home");
@@ -156,6 +158,7 @@ export default function App() {
                 onBack={handleBack}
               />
             )}
+            {currentView === "casos-permisos" && <CasesPermissionsView/>}
             {currentView === "emergencias" && (
               <EmergencyVisitsView
                 onNavigate={navigateTo}

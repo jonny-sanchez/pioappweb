@@ -51,22 +51,22 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
   );
 
     const fetchVisitaEmergencia = async () => {
-        try {
-            const data = await getVisitasEmergenciaByCaso(caso.id_caso);
-            setVisitaEmergencia(data);
-            setLastGpsLat(Number(data?.last_gps_latitude));
-            setLastGpsLng(Number(data?.last_gps_longitude));
+      try {
+        const data = await getVisitasEmergenciaByCaso(caso.id_caso);
+        setVisitaEmergencia(data);
+        setLastGpsLat(Number(data?.last_gps_latitude));
+        setLastGpsLng(Number(data?.last_gps_longitude));
 
-            const p = await permisoEstado();
-            setPermiso(p);
-        } catch (err: any) {
-            if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
-                localStorage.clear();
-                setIsAuthenticated(false);
-                return;
-            }
-            setError((err as Error).message);
+        const p = await permisoEstado();
+        setPermiso(p);
+      } catch (err: any) {
+        if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
+          localStorage.clear();
+          setIsAuthenticated(false);
+          return;
         }
+        setError((err as Error).message);
+      }
     }
 
     const fetchVisita = async () => {
@@ -279,7 +279,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                   <p className="text-gray-700">Visita Finalizada</p>
                 </div>
               </div>
-              {permiso && (
+              {permiso?.puede_modificar === true && (
               <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
                 <Button
                 onClick={() => handleClose()}

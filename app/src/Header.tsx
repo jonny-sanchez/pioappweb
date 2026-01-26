@@ -13,7 +13,8 @@ type View =
   | "caso"
   | "casos"
   | "caso-detalle"
-  | "caso-cierre";
+  | "caso-cierre"
+  | "casos-permisos";
 
 interface HeaderProps {
   currentView: View;
