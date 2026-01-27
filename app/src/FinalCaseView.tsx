@@ -8,12 +8,14 @@ import {
   Camera,
   CircleX,
   CheckCircle,
+  Clock,
+  PackagePlus,
+  Goal
 } from "lucide-react";
 import { VwDetalleCaso } from "./types/Caso";
 import { CasoModel } from "./types/Caso";
 import { PermisoEstadoModel } from "./types/PermisoEstado";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import Image from "next/image";
 import { cierreReaperturaCaso, permisoEstado } from "./api/CasoApi";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
@@ -21,7 +23,6 @@ import { getVisitasEmergenciaByCaso, getVisitaByVisitaEmergencia } from "./api/V
 import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
 import { Visita } from "./types/Visita";
 import { MapView } from "./MapView";
-import logo from "../../assets/img/image-default.png"
 
 interface FinalCaseDetailProps {
   caso: VwDetalleCaso;
@@ -54,6 +55,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
       try {
         const data = await getVisitasEmergenciaByCaso(caso.id_caso);
         setVisitaEmergencia(data);
+        console.log(data)
         setLastGpsLat(Number(data?.last_gps_latitude));
         setLastGpsLng(Number(data?.last_gps_longitude));
 
@@ -181,6 +183,10 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
     setShowCloseModal(true);
   };
 
+  const isEnProceso = (visitaEmergencia?.fecha_proceso || visitaEmergencia?.updatedAt &&
+                      visitaEmergencia?.createdAt) &&
+                      new Date(visitaEmergencia.updatedAt) > new Date(visitaEmergencia.createdAt);
+
   return (
     <div className="max-w-7xl mx-auto py-10">
       <div className="mb-2">
@@ -208,6 +214,128 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
           </div>
         </div>
       </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-gray-900">Flujo de la Visita</h2>
+        </div>
+        <div className="relative">
+          <div className="overflow-x-auto pb-2">
+            <div className="flex items-start gap-0 min-w-max mx-auto justify-center px-4">
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fcb900] border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10`}>
+                    <PackagePlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  {(visitaEmergencia?.fecha_programacion || visitaEmergencia?.updatedAt || visita?.createdAt) && (
+                    <div className="absolute left-1/2 top-1/2 w-full h-1 bg-[#fcb900] -translate-y-1/2"></div>
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-gray-900 text-xs sm:text-sm mb-1">Caso Creado</p>
+                  <p className="text-gray-600 text-xs">
+                    {formatDateTime(visitaEmergencia?.fecha_programacion.toString())}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fcb900] border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10`}>
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  {(visitaEmergencia?.fecha_programacion || visitaEmergencia?.updatedAt || visita?.createdAt) && (
+                    <div className="absolute left-1/2 top-1/2 w-full h-1 bg-[#fcb900] to-gray-300 -translate-y-1/2"></div>
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-gray-900 text-xs sm:text-sm mb-1">Asignada</p>
+                  <p className="text-gray-600 text-xs">
+                    {formatDateTime(visitaEmergencia?.fecha_programacion.toString())}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {!isEnProceso && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                      isEnProceso ? 'bg-[#fcb900]' : 'bg-gray-200'
+                      }`}>
+                      <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${(isEnProceso) ? 'text-white' : 'text-gray-400'}`} />
+                    </div>
+                    {visitaEmergencia?.estado === "Finalizada" && (
+                    <div className={`absolute left-1/2 top-1/2 w-full h-1 -translate-y-1/2 bg-[#fcb900]`}></div>
+                    )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${isEnProceso ? 'text-gray-900' : 'text-gray-500'}`}>
+                    En Proceso
+                  </p>
+                  {isEnProceso ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(visitaEmergencia.fecha_proceso?.toString() || visitaEmergencia?.updatedAt.toString())}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {(!visita?.createdAt || visitaEmergencia?.estado !== "Finalizada") && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                    (visita?.createdAt && visitaEmergencia?.estado === "Finalizada") ? 'bg-[#fcb900]' : 'bg-gray-200'
+                  }`}>
+                    <CheckCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${(visita?.createdAt && visitaEmergencia?.estado === "Finalizada") ? 'text-white' : 'text-gray-400'}`} />
+                  </div>
+                    {(caso?.estado === "Cerrado") && (
+                    <div className={`absolute left-1/2 top-1/2 w-full h-1 -translate-y-1/2 bg-[#fcb900]`}></div>
+                    )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${(visita?.createdAt && visitaEmergencia?.estado === "Finalizada") ? 'text-gray-900' : 'text-gray-500'}`}>
+                    Finalizada
+                  </p>
+                  {(visita?.createdAt && visitaEmergencia?.estado === "Finalizada") ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(visita?.createdAt)}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {(caso?.estado !== "Cerrado") && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                      (caso?.estado === "Cerrado") ? 'bg-[#fcb900]' : 'bg-gray-200'
+                      }`}>
+                      <Goal className={`w-5 h-5 sm:w-6 sm:h-6 ${(caso?.estado === "Cerrado") ? 'text-white' : 'text-gray-400'}`} />
+                    </div>
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${(caso?.estado === "Cerrado") ? 'text-gray-900' : 'text-gray-500'}`}>
+                    Caso Cerrado
+                  </p>
+                  {(caso?.estado === "Cerrado") ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(caso?.updatedAt.toString())}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="grid transition-all duration-700 ease-in-out grid-cols-1">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
@@ -228,15 +356,6 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                   <div>
                     <p className="text-gray-500 text-sm mb-1">Tienda</p>
                     <p className="text-gray-900">{visita?.tienda_nombre}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
-                    <p className="text-yellow-900">{formatDateTime(visita?.createdAt)}</p>
                   </div>
                 </div>
               </div>

@@ -40,7 +40,10 @@ export interface VwDetalleVisitaEmergencia {
   new_gps_longitude: string;
   new_gps_latitude: string;
   division: number;
-  id_caso: string
+  id_caso: string;
+  createdAt: Date;
+  updatedAt: Date;
+  fecha_proceso?: Date | null;
 }
 
 export interface CasoVisitaReabierta {

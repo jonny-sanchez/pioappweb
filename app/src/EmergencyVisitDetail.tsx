@@ -10,9 +10,10 @@ import {
   Loader2,
   Flag,
   Camera,
-  Download,
-  X,
-  RefreshCcw } from "lucide-react";
+  RefreshCcw, 
+  PackagePlus,
+  Goal
+} from "lucide-react";
 import { MapView } from "./MapView";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "./ui/button";
@@ -20,7 +21,8 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } f
 import { VwDetalleVisitaEmergencia, CasoVisitaReabierta, VisitaEmergencia } from "./types/VisitaEmergencia";
 import { Visita } from "./types/Visita";
 import { getVisitasEmergenciaById, getVisitaByVisitaEmergencia, getVisitasReabiertas } from "./api/VisitaApi";
-import Image from "next/image";
+import { CasoModel } from "./types/Caso";
+import { getCasoById } from "./api/CasoApi";
 
 interface EmergencyVisitDetailProps {
   visit: VwDetalleVisitaEmergencia;
@@ -38,6 +40,21 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   );
   const [visita, setVisita] = useState<Visita | null>(null);
   const [visitaActualizada, setVisitaActualizada] = useState<VisitaEmergencia | null>(null);
+  const [caso, setCaso] = useState<CasoModel | null>(null);
+
+  const fetchCaso = async () => {
+    try {
+      const data = await getCasoById(visit.id_caso);
+      setCaso(data);
+      console.log(data)
+    } catch (err) {
+      alert("Error al obtener el caso asociado a la visita de emergencia");
+    }
+  }
+
+  useEffect(() => {
+    fetchCaso();
+  }, []);
 
   const [lastGpsLng, setLastGpsLng] = useState<number | null>(
     visit.last_gps_longitude !== null
@@ -79,6 +96,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
       try {
         
         const updatedVisita = await getVisitasEmergenciaById(visitaId);
+        setVisitaActualizada(updatedVisita);
         if (!updatedVisita) return;
         const visit = await getVisitaByVisitaEmergencia(updatedVisita?.id_visita || 0)
         setVisita(visit)
@@ -88,7 +106,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
         }
         if (updatedVisita?.id_estado === 2) {
           setConfirmationStatus("confirmed");
-          setVisitaActualizada(updatedVisita);
         } else if (updatedVisita?.id_estado === 1) {
           setConfirmationStatus("waiting");
         } else if(updatedVisita?.id_estado === 3) {
@@ -112,6 +129,9 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
       }
     : null;
 
+  const isEnProceso = visitaActualizada?.updatedAt &&
+                      visitaActualizada?.createdAt &&
+                      new Date(visitaActualizada.updatedAt) > new Date(visitaActualizada.createdAt);
 
   const newVisitLocation = {
     lat: Number(visit.new_gps_latitude),
@@ -131,7 +151,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
     }
 
     return new Intl.DateTimeFormat("es-GT", {
-      weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -162,7 +181,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
     }
   };
 
-
   return (
     <div className="max-w-7xl mx-auto py-10">
       <div className="mb-2">
@@ -190,6 +208,133 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
           </div>
         </div>
       </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-gray-900">Flujo de la Visita</h2>
+          {visitasReabiertas && visitasReabiertas.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
+              <RefreshCcw className="w-3.5 h-3.5 text-orange-600" />
+              <span className="text-xs text-orange-700">Visita reabierta</span>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <div className="overflow-x-auto pb-2">
+            <div className="flex items-start gap-0 min-w-max mx-auto justify-center px-4">
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fcb900] border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10`}>
+                    <PackagePlus className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  {(visit?.fecha_programacion || visitaActualizada?.updatedAt || visita?.createdAt) && (
+                    <div className="absolute left-1/2 top-1/2 w-full h-1 bg-[#fcb900] -translate-y-1/2"></div>
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-gray-900 text-xs sm:text-sm mb-1">Caso Creado</p>
+                  <p className="text-gray-600 text-xs">
+                    {formatDateTime(visit?.fecha_programacion)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fcb900] border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10`}>
+                    <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  </div>
+                  {(visit?.fecha_programacion || visitaActualizada?.updatedAt || visita?.createdAt) && (
+                    <div className="absolute left-1/2 top-1/2 w-full h-1 bg-[#fcb900] to-gray-300 -translate-y-1/2"></div>
+                  )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-gray-900 text-xs sm:text-sm mb-1">Asignada</p>
+                  <p className="text-gray-600 text-xs">
+                    {formatDateTime(visit?.fecha_programacion)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {!isEnProceso && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                      isEnProceso ? 'bg-[#fcb900]' : 'bg-gray-200'
+                      }`}>
+                      <Clock className={`w-5 h-5 sm:w-6 sm:h-6 ${(isEnProceso) ? 'text-white' : 'text-gray-400'}`} />
+                    </div>
+                    {visitaActualizada?.id_estado === 3 && (
+                    <div className={`absolute left-1/2 top-1/2 w-full h-1 -translate-y-1/2 bg-[#fcb900]`}></div>
+                    )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${isEnProceso ? 'text-gray-900' : 'text-gray-500'}`}>
+                    En Proceso
+                  </p>
+                  {isEnProceso ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(visitaActualizada?.updatedAt)}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {(!visita?.createdAt || visitaActualizada?.id_estado !== 3) && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                      (visita?.createdAt && visitaActualizada?.id_estado === 3) ? 'bg-[#fcb900]' : 'bg-gray-200'
+                      }`}>
+                      <CheckCircle className={`w-5 h-5 sm:w-6 sm:h-6 ${(visita?.createdAt && visitaActualizada?.id_estado === 3) ? 'text-white' : 'text-gray-400'}`} />
+                    </div>
+                    {(caso?.id_estado === 4) && (
+                    <div className={`absolute left-1/2 top-1/2 w-full h-1 -translate-y-1/2 bg-[#fcb900]`}></div>
+                    )}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${(visita?.createdAt && visitaActualizada?.id_estado === 3) ? 'text-gray-900' : 'text-gray-500'}`}>
+                    Finalizada
+                  </p>
+                  {visita?.createdAt ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(visita?.createdAt)}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col items-center flex-1 min-w-[120px] sm:min-w-[160px]">
+                <div className="relative flex items-center w-full">
+                  {(caso?.id_estado !== 4) && (
+                  <div className="absolute right-1/2 top-1/2 w-full h-1 bg-gray-300 -translate-y-1/2"></div>
+                  )}
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center mx-auto relative z-10 ${
+                      (caso?.id_estado === 4) ? 'bg-[#fcb900]' : 'bg-gray-200'
+                      }`}>
+                      <Goal className={`w-5 h-5 sm:w-6 sm:h-6 ${(caso?.id_estado === 4) ? 'text-white' : 'text-gray-400'}`} />
+                    </div>
+                </div>
+                <div className="mt-3 text-center">
+                  <p className={`text-xs sm:text-sm mb-1 ${(caso?.id_estado === 4) ? 'text-gray-900' : 'text-gray-500'}`}>
+                    Caso Cerrado
+                  </p>
+                  {(caso?.id_estado === 4) ? (
+                    <p className="text-gray-600 text-xs">
+                      {formatDateTime(caso?.updatedAt)}
+                    </p>
+                  ) : (
+                    <p className="text-gray-400 text-xs">Pendiente</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
@@ -213,35 +358,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               </div>
-                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-yellow-600 mt-0.5" />
-                      {visit.estado === "Finalizada" && visita && (
-                        <div>
-                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Finalización</p>
-                          <p className="text-yellow-900">{formatDateTime(visita.createdAt)}</p>
-                        </div>
-                      )}
-                      {confirmationStatus === "confirmed" && visitaActualizada && (
-                        <div>
-                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Confirmación de Supervisor</p>
-                          <p className="text-yellow-900">{formatDateTime(visitaActualizada.updatedAt)}</p>
-                        </div>
-                      )}
-                      {confirmationStatus !== "finished" && confirmationStatus !== "confirmed" && !visita && (
-                        <div>
-                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Asignación</p>
-                          <p className="text-yellow-900">{formatDateTime(visit.fecha_programacion)}</p>
-                        </div>
-                      )}
-                      {confirmationStatus !== "finished" && confirmationStatus !== "confirmed" && visita && (
-                        <div>
-                          <p className="text-yellow-600 text-sm mb-1">Fecha y Hora de Reapertura</p>
-                          <p className="text-yellow-900">{formatDateTime(ultimaReapertura?.fecha_reapertura)}</p>
-                        </div>
-                      )}
-                  </div>
-                </div>
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <div className="flex items-start gap-3">
                   <MessageSquare className="w-5 h-5 text-blue-600 mt-0.5" />
