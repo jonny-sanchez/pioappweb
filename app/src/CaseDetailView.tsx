@@ -79,7 +79,7 @@ export function CaseDetail({ caso, onBack }: CaseDetailProps) {
         if (!selectedCaso || stores.length === 0) return;
 
         const tienda = stores.find(
-            (t) => t.codigo_tienda === selectedCaso.id_tienda
+            (t) => t.codigo_tienda === selectedCaso.id_tienda && t.codigo_empresa === selectedCaso.id_empresa
         );
 
         setSelectedStore(tienda ?? null);

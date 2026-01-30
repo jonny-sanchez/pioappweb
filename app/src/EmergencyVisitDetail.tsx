@@ -233,7 +233,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                 <div className="mt-3 text-center">
                   <p className="text-gray-900 text-xs sm:text-sm mb-1">Caso Creado</p>
                   <p className="text-gray-600 text-xs">
-                    {formatDateTime(visit?.fecha_programacion)}
+                    {formatDateTime(caso?.createdAt)}
                   </p>
                 </div>
               </div>
