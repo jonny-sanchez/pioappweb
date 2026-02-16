@@ -7,6 +7,7 @@ import { CasoModel } from "../types/Caso";
 import { VwDetalleCaso } from "../types/Caso";
 import { authFetch } from "../utils/auth-fetch";
 import { PermisoEstadoModel } from "../types/PermisoEstado";
+import { CasoArchivoModel } from "../types/CasoArchivo";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -168,6 +169,44 @@ export async function permisoEstado(): Promise<PermisoEstadoModel> {
     });
   if (!response.ok) {
     throw new Error("Error al obtener los permisos de estado");
+  }
+
+  return response.json();
+}
+
+export async function uploadCasoArchivos(id_caso: string, files: File[]) {
+  const token = localStorage.getItem('token');
+
+  const form = new FormData();
+  files.forEach((f) => form.append('imagenes', f)); // 👈 el campo DEBE llamarse 'imagenes'
+
+  const response = await fetch(`${BASE_URL}/casos/uploadArchivosCaso/${id_caso}/archivos`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}` // 👈 NO agregues Content-Type aquí
+    },
+    body: form
+  });
+
+  if (!response.ok) {
+    // Intenta leer detalles del backend para depurar mejor
+    const text = await response.text().catch(() => '');
+    let details: any;
+    try { details = JSON.parse(text); } catch {}
+    console.error('Upload falló:', details || text);
+    throw new Error(details?.error || details?.message || 'Error al cargar imagenes');
+  }
+
+  return response.json();
+}
+
+export async function getArchivosByCaso(id_caso: string): Promise<CasoArchivoModel[]> {
+  const response = await authFetch(`/casos/getArchivosCaso/${id_caso}/archivos`, {
+    headers: getAuthHeaders()
+  });
+
+  if(!response.ok) {
+    throw new Error("Error al obtener imagenes adjuntas");
   }
 
   return response.json();

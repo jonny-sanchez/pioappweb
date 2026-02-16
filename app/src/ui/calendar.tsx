@@ -12,7 +12,7 @@ function Calendar({ selected, onSelect }: CalendarProps) {
   const defaultClassNames = getDefaultClassNames();
   const today = new Date();
   const startYear = new Date(2010, 0);
-  const endYear = new Date(2026, 0);
+  const endYear = new Date(2028, 0);
 
   return (
     <div className="flex flex-col items-center justify-center text-gray-900">

@@ -10,19 +10,21 @@ import {
   CheckCircle,
   Clock,
   PackagePlus,
-  Goal
+  Goal,
+  RefreshCcw
 } from "lucide-react";
 import { VwDetalleCaso } from "./types/Caso";
 import { CasoModel } from "./types/Caso";
 import { PermisoEstadoModel } from "./types/PermisoEstado";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { cierreReaperturaCaso, permisoEstado } from "./api/CasoApi";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "./ui/button";
-import { getVisitasEmergenciaByCaso, getVisitaByVisitaEmergencia } from "./api/VisitaApi";
+import { getVisitasEmergenciaByCaso, getVisitaByVisitaEmergencia, getVisitasReabiertas } from "./api/VisitaApi";
 import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
 import { Visita } from "./types/Visita";
 import { MapView } from "./MapView";
+import { CasoVisitaReabierta } from "./types/VisitaEmergencia";
 
 interface FinalCaseDetailProps {
   caso: VwDetalleCaso;
@@ -42,8 +44,10 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
   const [timeEstimate, setTimeEstimate] = useState<string | null>(null);
   const [comments, setComments] = useState("");
   const [showReopenModal, setShowReopenModal] = useState(false);
+  const [showReopenedModal, setShowReopenedModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+    const [visitasReabiertas, setVisitasReabiertas] = useState<CasoVisitaReabierta []>([]);
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(
     visitaEmergencia?.last_gps_latitude !== null ? Number(visitaEmergencia?.last_gps_latitude) : null
   );
@@ -51,11 +55,34 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
     visitaEmergencia?.last_gps_longitude !== null ? Number(visitaEmergencia?.last_gps_longitude) : null
   );
 
+  const ultimaReapertura = useMemo(() => {
+      if(!visitasReabiertas || visitasReabiertas.length === 0) {
+        return null;
+      }
+  
+      return [...visitasReabiertas].sort((a, b) =>
+        new Date(b.fecha_reapertura).getTime() -
+        new Date(a.fecha_reapertura).getTime()
+      )[0];
+    }, [visitasReabiertas])
+
+    // const fetchVisitasReabiertas = async () => {
+    //   if(visita) {
+    //     const id_visita = visita?.id_visita;
+    //     const id_caso = caso.id_caso;
+    //     try {
+    //       const visitasReabiertas = await getVisitasReabiertas(Number(id_visita), id_caso);
+    //       setVisitasReabiertas(visitasReabiertas);
+    //     } catch (err) {
+    //       console.error("Error al consultar visitas reabiertas:", err);
+    //     }    
+    //   }
+    // }
+
     const fetchVisitaEmergencia = async () => {
       try {
         const data = await getVisitasEmergenciaByCaso(caso.id_caso);
         setVisitaEmergencia(data);
-        console.log(data)
         setLastGpsLat(Number(data?.last_gps_latitude));
         setLastGpsLng(Number(data?.last_gps_longitude));
 
@@ -76,6 +103,10 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
             try {
                 const data = await getVisitaByVisitaEmergencia(visitaEmergencia.id_visita)
                 setVisita(data);
+
+                const visitasReabiertas = await getVisitasReabiertas(Number(visitaEmergencia?.id_visita), caso.id_caso);
+                setVisitasReabiertas(visitasReabiertas);
+                console.log(data?.id_visita, caso.id_caso)
             } catch (err: any) {
                 if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
                     localStorage.clear();
@@ -99,6 +130,10 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
     useEffect(() => {
       fetchVisita();
     }, [visitaEmergencia])
+    
+    // useEffect(() => {
+    //   fetchVisitasReabiertas();
+    // }, [visita])
 
     const lastVisitLocation =
       lastGpsLat !== null && lastGpsLng !== null
@@ -376,22 +411,45 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                     <p className="text-blue-900">{visita?.comentario ?? "Supervisor no asigna comentario a la visita"}</p>
                   </div>
                 </div>
-              </div>
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                      <div className="flex items-start gap-3">
-                        <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-blue-600 text-sm mb-1">Imagen</p>
-                          <button 
-                            onClick={() => setShowImageModal(true)}
-                            className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
-                            title="Click para ver en grande"
+              </div> 
+              {visita && ultimaReapertura && (
+                <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-orange-600 text-xs sm:text-sm">Motivo de la reapertura</p>
+                        {visitasReabiertas.length >= 2 && (
+                          <button
+                          onClick={() => setShowReopenedModal(true)}
+                          className="group relative flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg animate-pulse-soft"
+                          title="Ver información de reaperturas"
                           >
-                            <img src={visita?.url_image} alt="Visita de Emergencia" />
+                            <RefreshCcw className="w-3.5 h-3.5 text-white" />
+                            <span className="text-white text-xs font-medium">{visitasReabiertas.length}</span>
                           </button>
-                        </div>
+                        )}
                       </div>
+                      <p className="text-orange-900 text-sm sm:text-base">{ultimaReapertura.motivo_reapertura}</p>
+                    </div>
                   </div>
+                </div>
+              )}
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-blue-600 text-sm mb-1">Imagen</p>
+                    <button 
+                      onClick={() => setShowImageModal(true)}
+                      className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                      title="Click para ver en grande"
+                    >
+                      <img src={visita?.url_image} alt="Visita de Emergencia" />
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">
                 <div className="flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-gray-600 mr-2" />
@@ -498,6 +556,96 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                 </Button>
               </div>
             </div>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showReopenedModal} onOpenChange={setShowReopenedModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse-soft">
+                <RefreshCcw className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-gray-900">
+              Historial de Reaperturas
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600">
+              Visita {visitaEmergencia?.id_visita} - {visitasReabiertas.length} {visitasReabiertas.length === 1 ? 'reapertura' : 'reaperturas'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-orange-900 text-sm font-medium mb-1">
+                    Esta visita requiere atención especial
+                  </p>
+                  <p className="text-orange-700 text-xs">
+                    Las múltiples reaperturas pueden indicar problemas recurrentes que necesitan resolución definitiva.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-gray-900 mb-3 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-gray-600" />
+                Historial de Reaperturas
+              </h4>
+              
+              {visitasReabiertas && visitasReabiertas.length > 0 ? (
+                <div className="space-y-3">
+                  {visitasReabiertas.map((entry, idx) => (
+                    <div 
+                      key={idx}
+                      className="relative bg-white rounded-xl p-4 border-l-4 border-orange-500 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="absolute -left-3 top-4 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-white text-xs font-bold">{visitasReabiertas.length - idx}</span>
+                      </div>
+                      <div className="ml-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <p className="text-gray-900 font-medium text-sm">
+                            {(() => {
+                              const date = new Date(entry.fecha_reapertura);
+                              return isNaN(date.getTime())
+                                ? "Fecha inválida"
+                                : new Intl.DateTimeFormat("es-GT", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }).format(date);
+                            })()}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Motivo de Reapertura</p>
+                          <p className="text-gray-700 text-sm">{entry.motivo_reapertura}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-6 text-center border border-gray-200">
+                  <p className="text-gray-500 text-sm">No hay historial de reaperturas disponible</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={() => setShowReopenedModal(false)}
+                className="bg-gray-900 text-white hover:bg-gray-800"
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
       <Dialog open={showReopenModal} onOpenChange={setShowReopenModal}>

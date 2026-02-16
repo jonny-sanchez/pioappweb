@@ -1,5 +1,17 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, MapPin, Target, ChevronRight, Folder, Search, Layers, FolderOpen, FileDown, Calendar } from "lucide-react";
+import {
+  AlertCircle,
+  MapPin,
+  Target,
+  ChevronRight,
+  Folder,
+  Search,
+  Layers,
+  FolderOpen,
+  FileDown,
+  Calendar,
+  UserIcon
+} from "lucide-react";
 import { Input } from "./ui/input";
 import { getCasosByDivision } from "./api/CasoApi";
 import { getVisitasEmergenciaByCaso } from "./api/VisitaApi";
@@ -381,6 +393,13 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
                       <div>
                         <p className="text-gray-500 text-sm">Fecha Asignada</p>
                         <p className="text-gray-900 text-sm">{formatDateTime(casos.createdAt)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <UserIcon className="w-4 h-4 text-gray-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="text-gray-500 text-sm">Creado Por</p>
+                        <p className="text-gray-900 text-sm">{casos.creador}</p>
                       </div>
                     </div>
                   </div>

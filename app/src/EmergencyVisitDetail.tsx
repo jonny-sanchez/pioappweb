@@ -12,7 +12,8 @@ import {
   Camera,
   RefreshCcw, 
   PackagePlus,
-  Goal
+  Goal,
+  ImageIcon
 } from "lucide-react";
 import { MapView } from "./MapView";
 import { useState, useEffect, useMemo } from "react";
@@ -23,6 +24,8 @@ import { Visita } from "./types/Visita";
 import { getVisitasEmergenciaById, getVisitaByVisitaEmergencia, getVisitasReabiertas } from "./api/VisitaApi";
 import { CasoModel } from "./types/Caso";
 import { getCasoById } from "./api/CasoApi";
+import { CasoArchivoModel } from "./types/CasoArchivo";
+import { getArchivosByCaso } from "./api/CasoApi";
 
 interface EmergencyVisitDetailProps {
   visit: VwDetalleVisitaEmergencia;
@@ -41,12 +44,16 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
   const [visita, setVisita] = useState<Visita | null>(null);
   const [visitaActualizada, setVisitaActualizada] = useState<VisitaEmergencia | null>(null);
   const [caso, setCaso] = useState<CasoModel | null>(null);
+  const [caseImages, setCaseImages] = useState<CasoArchivoModel[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const fetchCaso = async () => {
     try {
       const data = await getCasoById(visit.id_caso);
       setCaso(data);
-      console.log(data)
+      
+      const imgs = await getArchivosByCaso(visit.id_caso);
+      setCaseImages(imgs);
     } catch (err) {
       alert("Error al obtener el caso asociado a la visita de emergencia");
     }
@@ -367,6 +374,43 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               </div>
+              {caseImages && caseImages.length > 0 && (
+                <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-200">
+                  <div className="flex items-start gap-3">
+                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-purple-600 text-xs sm:text-sm mb-3">Imágenes Adjuntas por el Creador</p>
+                      <div className={`grid gap-2 ${
+                        caseImages.length === 1 ? 'grid-cols-1' :
+                        caseImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 sm:grid-cols-3'
+                      }`}>
+                        {caseImages.map((image, index) => (
+                          <div 
+                            key={index}
+                            className="relative bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-purple-100"
+                            onClick={() => {
+                              setSelectedImage(image.presignedUrl);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <div className="aspect-square flex items-center justify-center bg-gray-50">
+                              <img
+                                src={image.presignedUrl}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
+                              {index + 1}/{caseImages!.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {visit && ultimaReapertura && (
                 <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200">
                   <div className="flex items-start gap-3">
@@ -408,7 +452,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                         <div>
                           <p className="text-blue-600 text-sm mb-1">Imagen</p>
                           <button 
-                            onClick={() => setShowImageModal(true)}
+                            onClick={() => {setShowImageModal(true); setSelectedImage(visita?.url_image.toString() || null)}}
                             className="relative group overflow-hidden rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
                             title="Click para ver en grande"
                           >
@@ -576,7 +620,7 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
           </button>
           <div className="flex items-center justify-center p-4 sm:p-6 min-h-[300px]">
             <img
-              src={visita?.url_image}
+              src={selectedImage?.toString()}
               alt="Visita de Emergencia"
               className="
                 max-w-full

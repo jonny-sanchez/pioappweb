@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
-import { CheckCircle, CircleX } from "lucide-react";
+import { CheckCircle, CircleX, Upload, X } from "lucide-react";
 import { TiendaModulo } from "../src/types/TiendaModulo";
 import { TipoSolicitud } from "./types/TipoSolicitud";
 import { Impacto } from "./types/Impacto";
@@ -14,7 +14,8 @@ import {
     getAllUrgencias,
     getAllCategorias,
     getSubcategoriaByCategoria,
-    createCaso
+    createCaso,
+    uploadCasoArchivos
 } from '../src/api/CasoApi';
 import { getAllTiendas } from "../src/api/TiendaModuloApi";
 import { Combobox } from "./ui/combobox";
@@ -49,6 +50,8 @@ export function CaseView() {
     const [showError, setShowError] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [canCreate, setCanCreate] = useState(true);
+    const [attachedImages, setAttachedImages] = useState<string[]>([]);
+    const [imageFiles, setImageFiles] = useState<File[]>([]);
 
     //OBTENER TIENDAS
     const fetchStores = async () => {
@@ -177,36 +180,86 @@ export function CaseView() {
         setCanCreate(true)
     };
 
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (files) {
+        const filesArray = Array.from(files);
+        const remainingSlots = 1 - attachedImages.length;
+        const filesToProcess = filesArray.slice(0, remainingSlots);
+      
+        filesToProcess.forEach(file => {
+          console.log(file)
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setAttachedImages(prev => [...prev, reader.result as string]);
+            setImageFiles(prev => [...prev, file]);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      event.target.value = '';
+    };
+
+    const handleImageRemove = (index: number) => {
+      setAttachedImages(prev => prev.filter((_, i) => i !== index));
+      setImageFiles(prev => prev.filter((_, i) => i!== index));
+    };
+
     const createNewCaso = async () => {
       setCanCreate(false);
-        const fecha = new Date();
+      setShowError(false);
+      setErrorMessage('');
+
+      try {
         if(selectedStore && selectedTipoSolicitud && selectedImpacto && selectedUrgencia && selectedCategoria && selectedSubcategoria) {
-            const caso = await createCaso({
-                id_tienda: selectedStore.codigo_tienda,
-                tienda_nombre: selectedStore.nombre_tienda,
-                id_empresa: selectedStore.codigo_empresa,
-                division: Number(selectedStore.division),
-                id_tipo_solicitud: Number(selectedTipoSolicitud),
-                id_estado: 1,
-                id_impacto: Number(selectedImpacto),
-                id_urgencia: Number(selectedUrgencia),
-                id_categoria: Number(selectedCategoria),
-                id_subcategoria: Number(selectedSubcategoria),
-                mensaje: comments,
-            })
-            
-            if (caso.message) {
-                    setErrorMessage(caso.message);
-                    setShowError(true);
-                    return
-                  }
-                  else{
-                    setCasoCreado(caso.nuevoCaso);
-                    setShowSuccess(true);
-                  }
+          const caso = await createCaso({
+            id_tienda: selectedStore.codigo_tienda,
+            tienda_nombre: selectedStore.nombre_tienda,
+            id_empresa: selectedStore.codigo_empresa,
+            division: Number(selectedStore.division),
+            id_tipo_solicitud: Number(selectedTipoSolicitud),
+            id_estado: 1,
+            id_impacto: Number(selectedImpacto),
+            id_urgencia: Number(selectedUrgencia),
+            id_categoria: Number(selectedCategoria),
+            id_subcategoria: Number(selectedSubcategoria),
+            mensaje: comments,
+          })
+
+          if(caso.message) {
+            setErrorMessage(caso.message);
+            setShowError(true);
+            return;
+          }
+
+          setCasoCreado(caso.nuevoCaso);
+
+          if(imageFiles.length > 0 && caso?.nuevoCaso?.id_caso) {
+            try {
+              await uploadCasoArchivos(caso.nuevoCaso.id_caso, imageFiles);
+            } catch (error: any) {
+              console.error('error subiendo imagenes: ', error.message);
+              setErrorMessage('Caso creado, pero falló la subida de una o más imágenes');
+              setShowError(true);
+            }
+          }
+
+          setShowSuccess(true);
         } else {
-            console.warn("Hacen falta parámetros para crear un nuevo caso");
+          alert('Hacen falta parámetros para crear un nuevo caso');
         }
+      } catch (error: any) {
+        if(['TOKEN_EXPIRED', 'TOKEN_INVALID'].includes(error.message)) {
+          localStorage.clear();
+          setIsAuthenticated(false);
+          return;
+        }
+        setErrorMessage(error.message);
+        setShowError(true);
+      } finally {
+        setCanCreate(true);
+      }
     }
 
     const impactoSeleccionado = impactos.find(
@@ -414,6 +467,71 @@ export function CaseView() {
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fcb900] focus:border-transparent resize-none text-gray-900"
                       rows={3}
                     />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="image" className="text-gray-900">
+                        Adjuntar Imágen <span className="text-gray-500 text-xs">(Opcional)</span>
+                      </Label>
+                      {attachedImages.length > 0 && (
+                        <span className="text-xs text-gray-600">{attachedImages.length}</span>
+                      )}
+                    </div>
+                    
+                    {/* Grid de imágenes */}
+                    {attachedImages.length > 0 && (
+                      <div className={`grid gap-2 mb-2 ${
+                        attachedImages.length === 1 ? 'grid-cols-1' :
+                        attachedImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 sm:grid-cols-3'
+                      }`}>
+                        {attachedImages.map((image, index) => (
+                          <div key={index} className="relative bg-gray-50 rounded-lg p-2 border border-gray-300">
+                            <button
+                              onClick={() => handleImageRemove(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors shadow-md z-10"
+                              type="button"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            <div className="bg-white rounded overflow-hidden flex items-center justify-center h-24 sm:h-28">
+                              <img
+                                src={image}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <p className="text-[10px] text-gray-600 mt-1 truncate">{imageFiles[index]?.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Botón para agregar más imágenes */}
+                    {attachedImages.length < 1 && (
+                      <label
+                        htmlFor="image-upload"
+                        className={`w-full flex flex-col items-center justify-center px-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#fcb900] hover:bg-gray-50 transition-all duration-200 ${
+                          attachedImages.length === 0 ? 'py-6' : 'py-3'
+                        }`}
+                      >
+                        <Upload className={`text-gray-400 mb-1 ${attachedImages.length === 0 ? 'w-8 h-8' : 'w-6 h-6'}`} />
+                        <p className="text-sm text-gray-600">
+                          Seleccionar imágen
+                        </p>
+                        {attachedImages.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG</p>
+                        )}
+                        <input
+                          id="image-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          multiple
+                        />
+                      </label>
+                    )}
                   </div>
                   <Button
                     onClick={createNewCaso}

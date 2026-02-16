@@ -34,4 +34,5 @@ export interface VwDetalleCaso {
   correlativo: number;
   createdAt: Date;
   updatedAt: Date;
+  creador?: string;
 }

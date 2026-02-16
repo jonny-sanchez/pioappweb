@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
-import { CheckCircle, Clock, Loader2, MapPin, CircleX, ArrowLeft } from "lucide-react";
+import { CheckCircle, Clock, Loader2, MapPin, CircleX, ArrowLeft, ImageIcon } from "lucide-react";
 import { Supervisor } from "../src/types/Supervisor";
 import { Visita } from "../src/types/Visita";
 import { TiendaModulo } from "../src/types/TiendaModulo";
 import { TipoVisita } from "../src/types/TipoVisita";
 import { getAllSupervisors, getSupervisorBycodEmpleado } from "../src/api/SupervisorApi";
 import { getTiendaByIdAndEmpresa } from "../src/api/TiendaModuloApi";
-import { Combobox } from "./ui/combobox";
 import { MapView } from "./MapView";
 import {
   getLastVisitaBySupervisor,
@@ -25,6 +24,9 @@ import {
 } from "./ui/select";
 import { VisitaEmergencia } from "./types/VisitaEmergencia";
 import { VwDetalleCaso } from "./types/Caso";
+import { getArchivosByCaso } from "./api/CasoApi";
+import { CasoArchivoModel } from "./types/CasoArchivo";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 
 interface DeliveryViewProps {
   caso: VwDetalleCaso | null;
@@ -33,7 +35,8 @@ interface DeliveryViewProps {
 
 export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
-  const [stores, setStores] = useState<TiendaModulo[]>([]);
+  const [caseImages, setCaseImages] = useState<CasoArchivoModel[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [store, setStore] = useState<TiendaModulo | null>(null)
   const [tiposVisita, setTiposVisita] = useState<TipoVisita[]>([]);
   const [visitas, setVisitas] = useState<Visita | null>(null);
@@ -57,6 +60,7 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   const [lastGpsLng, setLastGpsLng] = useState<number | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [canCreate, setCanCreate] = useState(true);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   const scheduleDays = [
     { id: "1", name: "Hoy" },
@@ -64,22 +68,23 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   ];
 
   const fetchStoreAndSup = async () => {
-  if (!caso?.id_tienda || !caso?.id_empresa) return;
+    if (!caso?.id_tienda || !caso?.id_empresa) return;
 
-  try {
-    const tienda = await getTiendaByIdAndEmpresa(caso.id_tienda, caso.id_empresa);
-    setStore(tienda);
+    try {
+      const tienda = await getTiendaByIdAndEmpresa(caso.id_tienda, caso.id_empresa);
+      setStore(tienda);
 
-    const sup = await getSupervisorBycodEmpleado(tienda?.codigo_administrador || "0");
-    setSelectedPilot(sup);
+      const sup = await getSupervisorBycodEmpleado(tienda?.codigo_administrador || "0");
+      setSelectedPilot(sup);
 
-    setComments(caso.mensaje)
-  } catch (err) {
-    setError((err as Error).message);
-  }
-};
-
-
+      setComments(caso.mensaje)
+      console.log(tienda, sup, caso.mensaje);
+      const imgs = await getArchivosByCaso(caso.id_caso);
+      setCaseImages(imgs);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
 
   useEffect(() => {
     fetchStoreAndSup();
@@ -90,7 +95,8 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
   }, [store])
   
   useEffect(() => {
-  }, [selectedStore, selectedPilot])
+    console.log(selectedScheduleDay, selectedTipoVisita)
+  }, [selectedTipoVisita, selectedScheduleDay])
 
   useEffect(() => {
     const fetchSupervisors = async () => {
@@ -380,6 +386,44 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
                       rows={3}
                     />
                   </div>
+                  
+              {caseImages && caseImages.length > 0 && (
+                <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-200">
+                  <div className="flex items-start gap-3">
+                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-purple-600 text-xs sm:text-sm mb-3">Imágenes Adjuntas por el Creador</p>
+                      <div className={`grid gap-2 ${
+                        caseImages.length === 1 ? 'grid-cols-1' :
+                        caseImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 sm:grid-cols-3'
+                      }`}>
+                        {caseImages.map((image, index) => (
+                          <div 
+                            key={index}
+                            className="relative bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-purple-100"
+                            onClick={() => {
+                              setSelectedImage(image.presignedUrl);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <div className="aspect-square flex items-center justify-center bg-gray-50">
+                              <img
+                                src={image.presignedUrl}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
+                              {index + 1}/{caseImages!.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
                   <Button
                     onClick={createVisita}
                     className="bg-[#fcb900] text-gray-900 hover:bg-[#e5a700] w-full mt-2"
@@ -523,6 +567,34 @@ export function DeliveryView({caso, onBack}: DeliveryViewProps) {
             )}
         </div>
       </div>
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="sm:max-w-4xl p-0 bg-black border-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Evidencia Fotográfica</DialogTitle>
+            <DialogDescription>
+              Imagen ampliada de la evidencia fotográfica del caso
+            </DialogDescription>
+          </DialogHeader>
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            aria-label="Cerrar imagen"
+          >
+          </button>
+          <div className="flex items-center justify-center p-4 sm:p-6 min-h-[300px]">
+            <img
+              src={selectedImage?.toString()}
+              alt="Visita de Emergencia"
+              className="
+                max-w-full
+                max-h-[80vh]
+                object-contain
+                rounded-lg
+              "
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
