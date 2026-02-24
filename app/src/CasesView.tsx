@@ -39,7 +39,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
   const idRol = localStorage.getItem("rol");
 
   useEffect(() => {
-    if(selectedDivision === "null") {
+    if(selectedDivision === "null" || selectedDivision === "0") {
       setSelectedDivision("1");
       setCanChangeDiv(true);
     } else {
@@ -93,7 +93,7 @@ export function CasesView({ onNavigate, onSelectCaso, onSelectEmergencyVisit } :
       if (visita) {
         onSelectEmergencyVisit(visita);
         
-        if((caso.estado === "Finalizado" || caso.estado === "Cerrado")  && (idRol === "10" || idRol === "8")) {
+        if((caso.estado === "Finalizado" || caso.estado === "Cerrado")  && (idRol === "10" || idRol === "8" || idRol === "11")) {
           onSelectCaso(caso)
           onNavigate("caso-cierre")
         }

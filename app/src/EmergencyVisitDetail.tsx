@@ -374,43 +374,6 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                   </div>
                 </div>
               </div>
-              {caseImages && caseImages.length > 0 && (
-                <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-200">
-                  <div className="flex items-start gap-3">
-                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-purple-600 text-xs sm:text-sm mb-3">Imágenes Adjuntas por el Creador</p>
-                      <div className={`grid gap-2 ${
-                        caseImages.length === 1 ? 'grid-cols-1' :
-                        caseImages.length === 2 ? 'grid-cols-2' :
-                        'grid-cols-2 sm:grid-cols-3'
-                      }`}>
-                        {caseImages.map((image, index) => (
-                          <div 
-                            key={index}
-                            className="relative bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-purple-100"
-                            onClick={() => {
-                              setSelectedImage(image.presignedUrl);
-                              setShowImageModal(true);
-                            }}
-                          >
-                            <div className="aspect-square flex items-center justify-center bg-gray-50">
-                              <img
-                                src={image.presignedUrl}
-                                alt={`Imagen ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
-                              {index + 1}/{caseImages!.length}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
               {visit && ultimaReapertura && (
                 <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200">
                   <div className="flex items-start gap-3">
@@ -461,6 +424,55 @@ export function EmergencyVisitDetail({ visit, onBack }: EmergencyVisitDetailProp
                         </div>
                       </div>
                   </div>
+              )}
+              
+              {caseImages && caseImages.length > 0 && (
+                <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-200">
+                  <div className="flex items-start gap-3">
+                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-purple-600 text-xs sm:text-sm mb-3">Imagen Adjunta por el Creador</p>
+                      <div className={`grid gap-2 ${
+                        caseImages.length === 1 ? 'grid-cols-1' :
+                        caseImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 sm:grid-cols-3'
+                      }`}>
+                        {caseImages.map((image, index) => (
+                          <div 
+                            key={index}
+                            className="relative bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-purple-100"
+                            onClick={() => {
+                              setSelectedImage(image.presignedUrl);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <div className="aspect-square flex items-center justify-center bg-gray-50">
+                              <img
+                                src={image.presignedUrl}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
+                              {index + 1}/{caseImages!.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {caso?.id_estado === 4 && (
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="text-purple-600 text-sm mb-1">Mensaje de cierre</p>
+                    <p className="text-purple-900">{caso?.mensaje_cierre}</p>
+                  </div>
+                </div>
+              </div>
               )}
               {confirmationStatus === "waiting" && (
                 <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">

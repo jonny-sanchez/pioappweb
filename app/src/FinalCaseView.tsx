@@ -11,13 +11,14 @@ import {
   Clock,
   PackagePlus,
   Goal,
-  RefreshCcw
+  RefreshCcw,
+  ImageIcon
 } from "lucide-react";
 import { VwDetalleCaso } from "./types/Caso";
 import { CasoModel } from "./types/Caso";
 import { PermisoEstadoModel } from "./types/PermisoEstado";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { cierreReaperturaCaso, permisoEstado } from "./api/CasoApi";
+import { cierreReaperturaCaso, getArchivosByCaso, permisoEstado } from "./api/CasoApi";
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "./ui/button";
 import { getVisitasEmergenciaByCaso, getVisitaByVisitaEmergencia, getVisitasReabiertas } from "./api/VisitaApi";
@@ -25,6 +26,7 @@ import { VwDetalleVisitaEmergencia } from "./types/VisitaEmergencia";
 import { Visita } from "./types/Visita";
 import { MapView } from "./MapView";
 import { CasoVisitaReabierta } from "./types/VisitaEmergencia";
+import { CasoArchivoModel } from "./types/CasoArchivo";
 
 interface FinalCaseDetailProps {
   caso: VwDetalleCaso;
@@ -47,7 +49,9 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
   const [showReopenedModal, setShowReopenedModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
-    const [visitasReabiertas, setVisitasReabiertas] = useState<CasoVisitaReabierta []>([]);
+  const [caseImages, setCaseImages] = useState<CasoArchivoModel[]>([]);  
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [visitasReabiertas, setVisitasReabiertas] = useState<CasoVisitaReabierta []>([]);
   const [lastGpsLat, setLastGpsLat] = useState<number | null>(
     visitaEmergencia?.last_gps_latitude !== null ? Number(visitaEmergencia?.last_gps_latitude) : null
   );
@@ -66,19 +70,6 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
       )[0];
     }, [visitasReabiertas])
 
-    // const fetchVisitasReabiertas = async () => {
-    //   if(visita) {
-    //     const id_visita = visita?.id_visita;
-    //     const id_caso = caso.id_caso;
-    //     try {
-    //       const visitasReabiertas = await getVisitasReabiertas(Number(id_visita), id_caso);
-    //       setVisitasReabiertas(visitasReabiertas);
-    //     } catch (err) {
-    //       console.error("Error al consultar visitas reabiertas:", err);
-    //     }    
-    //   }
-    // }
-
     const fetchVisitaEmergencia = async () => {
       try {
         const data = await getVisitasEmergenciaByCaso(caso.id_caso);
@@ -88,6 +79,9 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
 
         const p = await permisoEstado();
         setPermiso(p);
+
+        const imgs = await getArchivosByCaso(caso.id_caso);
+        setCaseImages(imgs);
       } catch (err: any) {
         if (['TOKEN_EXPIRED', 'TOKEN_INVALID', 'TOKEN_REQUIRED'].includes(err?.message)) {
           localStorage.clear();
@@ -130,10 +124,6 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
     useEffect(() => {
       fetchVisita();
     }, [visitaEmergencia])
-    
-    // useEffect(() => {
-    //   fetchVisitasReabiertas();
-    // }, [visita])
 
     const lastVisitLocation =
       lastGpsLat !== null && lastGpsLng !== null
@@ -411,7 +401,7 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                     <p className="text-blue-900">{visita?.comentario ?? "Supervisor no asigna comentario a la visita"}</p>
                   </div>
                 </div>
-              </div> 
+              </div>
               {visita && ultimaReapertura && (
                 <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-200">
                   <div className="flex items-start gap-3">
@@ -450,6 +440,55 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
                   </div>
                 </div>
               </div>
+              
+              {caseImages && caseImages.length > 0 && (
+                <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-200">
+                  <div className="flex items-start gap-3">
+                    <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-purple-600 text-xs sm:text-sm mb-3">Imagen Adjunta por el Creador</p>
+                      <div className={`grid gap-2 ${
+                        caseImages.length === 1 ? 'grid-cols-1' :
+                        caseImages.length === 2 ? 'grid-cols-2' :
+                        'grid-cols-2 sm:grid-cols-3'
+                      }`}>
+                        {caseImages.map((image, index) => (
+                          <div 
+                            key={index}
+                            className="relative bg-white rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-purple-100"
+                            onClick={() => {
+                              setSelectedImage(image.presignedUrl);
+                              setShowImageModal(true);
+                            }}
+                          >
+                            <div className="aspect-square flex items-center justify-center bg-gray-50">
+                              <img
+                                src={image.presignedUrl}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="absolute bottom-1 right-1 bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
+                              {index + 1}/{caseImages!.length}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {caso.estado === "Cerrado" && (
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="text-purple-600 text-sm mb-1">Mensaje de cierre</p>
+                    <p className="text-purple-900">{caso?.mensaje_cierre}</p>
+                  </div>
+                </div>
+              </div>
+              )}
               <div className="bg-gray-100 rounded-xl p-3 border border-gray-300">
                 <div className="flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-gray-600 mr-2" />
@@ -537,6 +576,18 @@ export function FinalCaseDetail({ caso, onBack }: FinalCaseDetailProps) {
             </DialogDescription>
           </DialogHeader>
             <div className="space-y-3">
+              
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                <p className="text-gray-500 text-xs mb-1">Comentario</p>
+                  <textarea
+                    id="comments"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    placeholder="Escribe un comentario para el cierre del caso..."
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fcb900] focus:border-transparent resize-none text-gray-900"
+                    rows={3}
+                  />
+              </div>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setShowCloseModal(false)}
